@@ -19,10 +19,10 @@ public class Manager {
             string address = checkLocalAppSqs(); // check if SQS Queue has new msgs for me
             if (address != null && terminated !=1) { // if terminated dont add new Files, but still finish what he got so far
                 string inputfile = downloadFileFromS3(address); // maybe not string
-                int numOfSqsMsgs = getNumOfSqsMsgs(inputfile);
-                counter+=numOfSqsMsgs;
-                sendToWorkersSqs(inputfile);
-                createNewWorkers(numOfSqsMsgs,numOfCurrWorkers); // if needed adds new worker instances
+                Msg[] msgs = parse(inputfile);
+                counter+=msgs.size();
+                sendToWorkersSqs(msgs);
+                createNewWorkers(sgs.size(),numOfCurrWorkers); // if needed adds new worker instances
             }
 
             /// maybe another Thread
