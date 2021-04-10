@@ -7,50 +7,52 @@ import software.amazon.awssdk.services.ec2.model.RunInstancesResponse;
 import software.amazon.awssdk.services.ec2.model.Tag;
 import software.amazon.awssdk.services.ec2.model.CreateTagsRequest;
 import software.amazon.awssdk.services.ec2.model.Ec2Exception;
+import java.util.*;
 
 public class Manager implements Runnable{
-    protected Job[] jobs;
+    static  Map<Integer, Job> jobs = new HashMap<>();
     static int numOfCurrWorkers=0;
-    static String responesAdd;
     static int terminated = 0;
-    static int counter = 0;
+    static int nextJobID = 0;
+
 
     public static void main(String[] args) {
-        while(true) { // maybe sleep ?
+
+        final int n = Integer.parseInt(args[0]); // getting it throgh the localApplication args
+
+        Manager responseThread = this.getClass(); // Todo fix
+        Thread thread = new Thread(responseThread);
+        thread.start();
+
+        while(true) { // maybe sleep?
             String address = checkLocalAppSqs(); // check if SQS Queue has new msgs for me
             if (address != null && terminated !=1) { // if terminated dont add new Files, but still finish what he got so far
-                String inputfile = downloadFileFromS3(address); // maybe not String
-                Msg[] msgs = parse(inputfile);
-                counter+=msgs.size();
-                sendToWorkersSqs(msgs);
-                createNewWorkers(sgs.size(),numOfCurrWorkers); // if needed adds new worker instances
+                Job job = downloadAndPharse(address,nextJobID);// jobs contains his JobID
+                jobs.put(nextJobID++,job); // adds the Job to the jobs Map
+
+                numOfCurrWorkers = createNewWorkers(job.reviews.length,numOfCurrWorkers); // if needed adds new worker instances, checks with SQS size
+                sendReviewsToWorkersSqs(job);
             }
-
-            /// maybe another Thread
-            String response = checkRespondSqs();
-            if (response != null) {
-                bool isDuplicate = saveRespondToS3(response); // if not duplicated
-                if (!isDuplicate){
-                    counter--;
-                }
-            }
-
-            if (counter == 0){ // finished, all msgs returned(how? maybe a counter  )
-                sendToLocalAppSQS(responesAdd);
-                if (terminated==1){
-                    terminateAllWorkers();
-                    createResponseMsg();// not sure
-                    terminate();
-                }
-            }
-
-
         }
 
     }
 
     @Override
     public void run() {
+        /// maybe another Thread
+        Result result = checkResultsSqs();
+        if (result != null) {
+            int finishedJobID =saveResult(result); // if not duplicated, and if Reviews.length=Results.length returns jobID else return -1
+        }
 
+        if (finishedJobID!=-1){  // finished
+            string address = uploadResultsToS3(finishedJobID);
+            sendToLocalAppSQS(address); // updating the localapp sqs for the new result
+            if (terminated==1){
+                terminateAllWorkers(); //numOfCurrWorkers
+                createResponseMsg();// not sure what that means
+                terminate();
+            }
+        }
     }
 }
