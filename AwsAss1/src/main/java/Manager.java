@@ -8,17 +8,18 @@ import software.amazon.awssdk.services.ec2.model.Tag;
 import software.amazon.awssdk.services.ec2.model.CreateTagsRequest;
 import software.amazon.awssdk.services.ec2.model.Ec2Exception;
 
-public class Manager {
+public class Manager implements Runnable{
+    protected Job[] jobs;
     static int numOfCurrWorkers=0;
-    static string responesAdd;
+    static String responesAdd;
     static int terminated = 0;
     static int counter = 0;
 
     public static void main(String[] args) {
         while(true) { // maybe sleep ?
-            string address = checkLocalAppSqs(); // check if SQS Queue has new msgs for me
+            String address = checkLocalAppSqs(); // check if SQS Queue has new msgs for me
             if (address != null && terminated !=1) { // if terminated dont add new Files, but still finish what he got so far
-                string inputfile = downloadFileFromS3(address); // maybe not string
+                String inputfile = downloadFileFromS3(address); // maybe not String
                 Msg[] msgs = parse(inputfile);
                 counter+=msgs.size();
                 sendToWorkersSqs(msgs);
@@ -26,7 +27,7 @@ public class Manager {
             }
 
             /// maybe another Thread
-            string response = checkRespondSqs();
+            String response = checkRespondSqs();
             if (response != null) {
                 bool isDuplicate = saveRespondToS3(response); // if not duplicated
                 if (!isDuplicate){
@@ -34,7 +35,6 @@ public class Manager {
                 }
             }
 
-            /// maybe another Thread
             if (counter == 0){ // finished, all msgs returned(how? maybe a counter  )
                 sendToLocalAppSQS(responesAdd);
                 if (terminated==1){
@@ -46,6 +46,11 @@ public class Manager {
 
 
         }
+
+    }
+
+    @Override
+    public void run() {
 
     }
 }

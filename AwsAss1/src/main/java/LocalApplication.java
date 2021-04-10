@@ -4,6 +4,7 @@ public class LocalApplication {
             runManager();
         //upload file from local folder to S3, receive a URL for the manager to use later
         //        upload_to_s3(args[0]);
+        OpenSQSWithManajer();
         String URL = uploadToS3("bananotPATH");
         //pushing job to SQS as a URL for the uploaded file
         pushSQS(URL);
