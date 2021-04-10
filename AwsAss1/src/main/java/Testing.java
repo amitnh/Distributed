@@ -1,11 +1,9 @@
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-
+import org.json.simple.parser.*;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 
 public class Testing {
     public static void main(String[] args) throws FileNotFoundException {
@@ -16,7 +14,7 @@ public class Testing {
             for (Object o : a) {
                 // access your object here.
             }
-        } catch (FileNotFoundException e) {
+        } catch (IOException | ParseException e) {
             e.printStackTrace();
         }
 
