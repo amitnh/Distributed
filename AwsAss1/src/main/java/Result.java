@@ -4,7 +4,7 @@ public class Result {
     protected int Reviewindex;
     //TODO
     protected int sentiment;
-    protected String entities;
+    protected String[] entities; // RSON, LOCATION, ORGANIZATION
 
     public void setSentimentAnalysis(int sentiment) {
         this.sentiment=sentiment;

@@ -1,4 +1,3 @@
-import java.util.Base64;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ec2.Ec2Client;
 import software.amazon.awssdk.services.ec2.model.InstanceType;
@@ -8,6 +7,7 @@ import software.amazon.awssdk.services.ec2.model.Tag;
 import software.amazon.awssdk.services.ec2.model.CreateTagsRequest;
 import software.amazon.awssdk.services.ec2.model.Ec2Exception;
 import java.util.*;
+import java.util.Base64;
 
 public class Manager implements Runnable{
     static  Map<Integer, Job> jobs = new HashMap<>();
@@ -20,7 +20,7 @@ public class Manager implements Runnable{
 
         final int n = Integer.parseInt(args[0]); // getting it throgh the localApplication args
 
-        Manager responseThread = this.getClass(); // Todo fix
+        Manager responseThread = new Manager();
         Thread thread = new Thread(responseThread);
         thread.start();
 
@@ -39,19 +39,21 @@ public class Manager implements Runnable{
 
     @Override
     public void run() {
-        /// maybe another Thread
-        Result result = checkResultsSqs();
-        if (result != null) {
-            int finishedJobID =saveResult(result); // if not duplicated, and if Reviews.length=Results.length returns jobID else return -1
-        }
+        while (true) {
+            /// maybe another Thread
+            Result result = checkResultsSqs();
+            if (result != null) {
+                int finishedJobID = saveResult(result); // if not duplicated, and if Reviews.length=Results.length returns jobID else return -1
+            }
 
-        if (finishedJobID!=-1){  // finished
-            string address = uploadResultsToS3(finishedJobID);
-            sendToLocalAppSQS(address); // updating the localapp sqs for the new result
-            if (terminated==1){
-                terminateAllWorkers(); //numOfCurrWorkers
-                createResponseMsg();// not sure what that means
-                terminate();
+            if (finishedJobID != -1) {  // finished
+                string address = uploadResultsToS3(finishedJobID);
+                sendToLocalAppSQS(address); // updating the localapp sqs for the new result
+                if (terminated == 1) {
+                    terminateAllWorkers(); //numOfCurrWorkers
+                    createResponseMsg();// not sure what that means
+                    terminate();
+                }
             }
         }
     }
