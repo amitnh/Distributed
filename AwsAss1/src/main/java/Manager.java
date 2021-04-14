@@ -24,22 +24,21 @@ public class Manager implements Runnable{
     static int numOfCurrWorkers=0;
     static int terminated = 0;
     static int nextJobID = 0;
-
+    static int n=0;
+    static String s3name = "bucket-amitandtal";
 
     public static void main(String[] args) {
-
-        final int n = Integer.parseInt(args[0]); // getting it throgh the localApplication args
-
         Manager responseThread = new Manager();
         Thread thread = new Thread(responseThread);
         thread.start();
 
         while(true) { // maybe sleep?
             String[] arguments = checkLocalAppSqs(); // check if SQS Queue has new msgs for me
-            //arguments  -> [address, jobOwner, outputFileName]   (output SQS = outputSQS#jobOwner)
+            //arguments  -> [address, jobOwner, outputFileName,n]   (output SQS = outputSQS#jobOwner)
             String address = arguments[0];
             String jobOwner = arguments[1];
             String outputFileName = arguments[2];
+            n = Integer.parseInt(arguments[3]);
 
             if (address != null && terminated !=1) { // if terminated dont add new Files, but still finish what he got so far
                 Job job = downloadAndPharse(address,nextJobID,jobOwner, outputFileName);// jobs contains his JobID
@@ -51,6 +50,8 @@ public class Manager implements Runnable{
         }
 
     }
+
+
     private static Job downloadAndPharse(String address, int nextJobID,String jobOwner, String outputFileName) {
         //TODO download adress from S3
         List<Review> reviewList = new LinkedList<>();
