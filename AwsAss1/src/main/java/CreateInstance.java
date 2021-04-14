@@ -47,7 +47,7 @@ public class CreateInstance {
    
  
         String name = "test1";//args[0];
-        String amiId = "ami-0742b4e673072066f";//ami-076515f20540e6e0b
+        String amiId = "ami-081475026498ccd01"; // JavaAndGit //"ami-0742b4e673072066f" java //ami-076515f20540e6e0b from project not found
  
         // snippet-start:[ec2.java2.create_instance.main]
         //Ec2Client ec2 = Ec2Client.create();

@@ -30,8 +30,7 @@ public class Worker {
             // remove the review from the jobs_SQS
             removeJobFromSQS(review);
         }
-
-
+        
     }
 
     private static Result ProccesReview(Review review) {
@@ -39,7 +38,7 @@ public class Worker {
 
         String reviewStr = review.getReview();
         result.setSentimentAnalysis(sentimentAnalysisHandler.findSentiment(reviewStr));
-        result.setNamedEntityRecognition(namedEntityRecognitionHandler.printEntities(reviewStr));
+        result.setNamedEntityRecognition(namedEntityRecognitionHandler.printEntities(reviewStr)); // TODO change printEntiries becouse now its only printing to the screen.
         return result;
     }
 

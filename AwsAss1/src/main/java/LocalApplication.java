@@ -12,10 +12,15 @@ public class LocalApplication {
         finish();
     }
 
-    private static boolean managerOnline() {
+    private static boolean managerOnline() {// by tag
         return false;
     }
     private static void runManager() {
+        //open instance
+        // start manager code
+        // take from Amir
+        // add manager tag
+
     }
 
 
