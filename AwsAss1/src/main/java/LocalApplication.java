@@ -89,10 +89,7 @@ public class LocalApplication {
         return false;
     }
     private static void runManager() {
-        //open instance
-        // start manager code
-        // take from Amir
-        // add manager tag
+        AwsHelper.startInstance("Manager","Manager.jar");
 
     }
 

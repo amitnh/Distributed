@@ -2,21 +2,29 @@ import com.google.gson.Gson;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.ec2.Ec2Client;
+import software.amazon.awssdk.services.ec2.model.*;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.model.Tag;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
 
 public class AwsHelper {
+    public static String amiId = "ami-081475026498ccd01";
     public static  Gson gson = new Gson();
     public static SqsClient sqs = SqsClient.builder().region(Region.US_EAST_1).build();
     public static S3Client s3Client = S3Client.builder().region(Region.US_EAST_1).build();
+    public static Ec2Client ec2 = Ec2Client.builder().region(Region.US_EAST_1).build();
+
     public static String bucket_name = "bucket-amitandtal";
     public static int NumOfRetriveMSGs = 1;
     public static String sqsTesting = "sqsTesting";
@@ -149,6 +157,43 @@ public class AwsHelper {
         System.out.println("File downloaded: " + key);
     }
 
+    //=============================================================================
+    //instance- start an instance and run jar file on S3 bucket
+    //=============================================================================
+
+    public static void startInstance(String nameTag,String jarAddress) {
+        IamInstanceProfileSpecification role = IamInstanceProfileSpecification.builder()
+                .name(nameTag)
+                .build();
+        RunInstancesRequest runRequest = RunInstancesRequest.builder()
+                .imageId(amiId)
+                .instanceType(InstanceType.T2_SMALL)
+                .maxCount(1)
+                .minCount(1)
+                .userData(getDataScript(jarAddress))
+                .iamInstanceProfile(role)
+                .build();
+        RunInstancesResponse buildManagerResponse = ec2.runInstances(runRequest);
+        String instanceId = buildManagerResponse.instances().get(0).instanceId();
+
+        // Now we will add a tag
+        Tag tag = Tag.builder().key("Name").value(nameTag).build();
+
+        CreateTagsRequest tagsRequest = CreateTagsRequest.builder()
+                .resources(instanceId)
+                .tags(tag)
+                .build();
+        ec2.createTags(tagsRequest);
+
+
+    }
+    private static String getDataScript(String jarAddress) {
+        String str = "";
+        str+="#! /bin/bash\n";
+        str+="wget https://" +bucket_name +".s3.amazonaws.com/"+ jarAddress + "\n";// todo change the s3address
+        str+="java -jar " + jarAddress + "\n";
+        return Base64.getEncoder().encodeToString(str.getBytes());
+    }
 
 
     //=============================================================================

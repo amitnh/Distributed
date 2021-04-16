@@ -17,6 +17,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonReader;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 import sun.awt.image.ImageWatched;
@@ -53,14 +54,33 @@ public class Manager implements Runnable{
                     Job job = downloadAndParse(address, jobOwner, outputFileName);// jobs contains his JobID
                     jobs.put(nextJobID++, job); // adds the Job to the jobs Map
 
-                    numOfCurrWorkers = createNewWorkers(job.reviews.size(), numOfCurrWorkers); // if needed adds new worker instances, checks with SQS size
+                // getting the estimated amount of currentReviews----------------
+                // String attr = "ApproximateNumberOfMessages";// todo fix
+               // Map<String, String> attributes = AwsHelper.sqs.getQueueAttributes(new GetQueueAttributesRequest(AwsHelper.getSQSUrl("SQSreviews")).withAttributeNames(attr)).getAttributes();
+               // int currentReviews = Integer.parseInt(attributes.get(attr));
+                int currentReviews = 0;
+                //---------------------------------------------------------------
+                    numOfCurrWorkers = createNewWorkers(job.reviews.size()+currentReviews); // if needed adds new worker instances, checks with SQS size
                     sendReviewsToWorkersSqs(job);
                 if (terminated != 1) {
                     break;
                 }
             }
         }
+    }
 
+    private static int createNewWorkers(int numOfReviews) {
+        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n createNewWorkers"); // todo delete
+
+        int neededWorkers = (int)Math.ceil(numOfReviews/n);
+        int newWorkers = 0;
+        if (neededWorkers>numOfCurrWorkers) {
+            newWorkers=numOfCurrWorkers-neededWorkers;
+            for (int w=0;w<newWorkers;w++){
+                AwsHelper.startInstance("Worker","Worker.jar");
+            }
+        }
+        return newWorkers;
     }
 
     private static Job downloadAndParse(String address,String jobOwner, String outputFileName) {
