@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
 
+
 public class LocalApplication {
 
     private static S3Client s3Client = S3Client.builder().region(Region.US_EAST_1).build();
@@ -49,13 +50,32 @@ public class LocalApplication {
         finish();
     }
 
+    private static void OpenS3() {
+        S3Client s3Client;
+        //open bucket
+        Region region = Region.US_EAST_1;
+        bucket_name = "bucket-" + id;
+
+        s3Client = S3Client.builder()
+//				.credentialsProvider(StaticCredentialsProvider.create(credentials))
+                .region(region)
+                .build();
+
+        s3Client.createBucket(CreateBucketRequest
+                .builder()
+                .bucket(bucket_name)
+                .createBucketConfiguration(
+                        CreateBucketConfiguration.builder()
+//						.locationConstraint(region.id())
+                                .build())
+                .build());
+        System.out.println("Bucket created: " + bucket_name);
+    }
+
     //create an SQS named SQS_name
     private static void OpenSQS(String SQS_name) {
     }
 
-    //create an SQS named "sqsLocalsToManager", for ALL locals jobs
-    private static void OpenSQSWithManajer(String jobsSQS) {
-    }
 
     private static boolean managerOnline() {// by tag
         return false;
