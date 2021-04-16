@@ -214,6 +214,7 @@ public class LocalApplication {
         System.out.println("Bucket deleted: " + bucket_name);
     }
 
+
     }
     public static void downloadFile(String key, String destination) {
         s3Client.getObject(GetObjectRequest.builder().bucket(bucket_name).key(key).build(),
