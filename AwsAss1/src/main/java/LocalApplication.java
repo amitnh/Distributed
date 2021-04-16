@@ -41,7 +41,6 @@ public class LocalApplication {
     public static void main(String[] args) {
 
         int numOfFiles = (args.length-2)/2;
-        terminated = Integer.parseInt(args[args.length - 1]);
         //myID is the local's ID for the manager to use
         myID = System.currentTimeMillis();
         sqsManagerToLocal = "sqsManagerToLocal-"+myID;
@@ -56,7 +55,7 @@ public class LocalApplication {
 
             //manager is now online and ready for jobs
         }
-        AwsHelper.OpenSQS(sqsTesting);      //this SQS is for ALL locals to upload jobs for the manager
+        AwsHelper.OpenSQS(sqsTesting);      //TODO remove, this SQS is for ALL locals to upload jobs for the manager
 
         AwsHelper.OpenSQS(sqsManagerToLocal);  //this SQS is for this local ONLY for messages about finished jobs from manager.
 
@@ -68,6 +67,11 @@ public class LocalApplication {
 
             //pushing job to SQS as a URL for the uploaded file
             //arguments  -> [address, jobOwner, outputFileName,n,[terminating]]
+            if (numOfFiles-1 == i)
+                terminated = Integer.parseInt(args[args.length - 1]); // only in the last file
+            else
+                terminated=0;
+
             String[] arguments = {key, String.valueOf(myID), args[numOfFiles+i], args[args.length - 2],String.valueOf(terminated)};
             List<Message> list = new LinkedList<>();
             list.add(AwsHelper.toMSG(arguments));

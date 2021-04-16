@@ -17,50 +17,66 @@ import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonReader;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 import sun.awt.image.ImageWatched;
 
 public class Manager implements Runnable{
-    static  Map<Integer, Job> jobs = new HashMap<>();
-    static int numOfCurrWorkers=0;
-    static int terminated = 0;
-    static int nextJobID = 0;
-    static int n=0;
-    static String s3name = "bucket-amitandtal";
+    public static  Map<Integer, Job> jobs = new HashMap<>();
+    public static int numOfCurrWorkers=0;
+    public static int terminated = 0;
+    public static int nextJobID = 0;
+    public static int nextReviewIndex = 0;
+    public static int n=0;
+    public static String s3name = "bucket-amitandtal";
 
     public static void main(String[] args) {
+        //todo start mngr to testsqs
+        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager is up");// todo delete
         Manager responseThread = new Manager();
         Thread thread = new Thread(responseThread);
         thread.start();
 
         while(true) { // maybe sleep?
-            String[] arguments = checkLocalAppSqs(); // check if SQS Queue has new msgs for me
+            List<Message> msgs = AwsHelper.popSQS(AwsHelper.sqsLocalsToManager); // check if SQS Queue has new msgs for me
 
+            for (Message m : msgs) {
+                String[] arguments = AwsHelper.fromMSG(m,String[].class);
+                //arguments  -> [address, jobOwner, outputFileName,n,[terminating]]   (output SQS = outputSQS#jobOwner)
+                String address = arguments[0];
+                String jobOwner = arguments[1];
+                String outputFileName = arguments[2];
+                n = Integer.parseInt(arguments[3]);
+                terminated = Integer.parseInt(arguments[4]); //if local has multiple jobs he needs to send 1 only in the last job !
 
+                 // if terminated dont add new Files, but still finish what he got so far
+                    Job job = downloadAndParse(address, jobOwner, outputFileName);// jobs contains his JobID
+                    jobs.put(nextJobID++, job); // adds the Job to the jobs Map
 
-            //arguments  -> [address, jobOwner, outputFileName,n,[terminating]]   (output SQS = outputSQS#jobOwner)
-            String address = arguments[0];
-            String jobOwner = arguments[1];
-            String outputFileName = arguments[2];
-            n = Integer.parseInt(arguments[3]);
-            terminated = Integer.parseInt(arguments[4]);
-            if (address != null && terminated !=1) { // if terminated dont add new Files, but still finish what he got so far
-                Job job = downloadAndPharse(address,nextJobID,jobOwner, outputFileName);// jobs contains his JobID
-                jobs.put(nextJobID++,job); // adds the Job to the jobs Map
-
-                numOfCurrWorkers = createNewWorkers(job.reviews.size(),numOfCurrWorkers); // if needed adds new worker instances, checks with SQS size
-                sendReviewsToWorkersSqs(job);
+                    numOfCurrWorkers = createNewWorkers(job.reviews.size(), numOfCurrWorkers); // if needed adds new worker instances, checks with SQS size
+                    sendReviewsToWorkersSqs(job);
+                if (terminated != 1) {
+                    break;
+                }
             }
         }
 
     }
 
+    private static Job downloadAndParse(String address,String jobOwner, String outputFileName) {
+        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n downloadAndParse: "+ address); // todo delete
 
-    private static Job downloadAndPharse(String address, int nextJobID,String jobOwner, String outputFileName) {
-        //TODO download adress from S3
+        //------------------download-------------------------------
+        try{
+            AwsHelper.downloadFile(address,"./"+address);
+        }
+        catch (Exception e){}
+        //---------------------parse--------------------------------
         List<Review> reviewList = new LinkedList<>();
         String jobName = "";
         Gson gson = new Gson();
-        try (Reader reader = new FileReader(address)) {
+
+        try (Reader reader = new FileReader("./"+address)) {
             BufferedReader Buffer = new BufferedReader(reader);
             String Line = Buffer.readLine();
             jobName = (new JSONObject(Line)).get("title").toString();
@@ -71,22 +87,24 @@ public class Manager implements Runnable{
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject explrObject = jsonArray.getJSONObject(i);
                     Review review = gson.fromJson(String.valueOf(explrObject), Review.class);
+                    review.setIndex(nextReviewIndex++);
                     reviewList.add(review);
+
                 }
                 Line = Buffer.readLine();
             }
-
+            File f = new File("./"+address);// deletes the file from local Instance
+            f.delete();
         } catch (IOException e) {
             e.printStackTrace();
         }
-//    public Job(String jobOwner, int jobID, String title, Review[] reviews,  String outputFileName) {
-
-        Job job = new Job(jobOwner,  nextJobID, jobName,  reviewList,  outputFileName);
-        return job;
+            return new Job(jobOwner,  nextJobID++, jobName,  reviewList,  outputFileName);
     }
 
     @Override
     public void run() {
+        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager's thread is up");// todo delete
+
         while (true) {
             /// maybe another Thread
             Result result = checkResultsSqs();

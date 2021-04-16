@@ -39,9 +39,9 @@ public class namedEntityRecognitionHandler {
                 String word = token.get(CoreAnnotations.TextAnnotation.class);
 // this is the NER label of the token
                 String ne = token.get(CoreAnnotations.NamedEntityTagAnnotation.class);
-                if (ne == PERSON) s[0] += word + ",";
-                else if (ne = LOCATION) s[1] += word + ",";
-                else if (ne = ORGANIZATION) s[2] += word + ",";
+                if (ne == "PERSON") s[0] += word + ",";
+                else if (ne == "LOCATION") s[1] += word + ",";
+                else if (ne == "ORGANIZATION") s[2] += word + ",";
             }
         }
         return s;

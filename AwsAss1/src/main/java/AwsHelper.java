@@ -19,6 +19,9 @@ public class AwsHelper {
     public static S3Client s3Client = S3Client.builder().region(Region.US_EAST_1).build();
     public static String bucket_name = "bucket-amitandtal";
     public static int NumOfRetriveMSGs = 1;
+    public static String sqsTesting = "sqsTesting";
+    public static String sqsLocalsToManager = "sqsLocalsToManager";
+
     public static void OpenS3() {
         S3Client s3Client;
         //open bucket
@@ -66,6 +69,17 @@ public class AwsHelper {
                     .build();
             sqs.sendMessage(send_msg_request);
         }
+    }
+    public static void pushSQS(String SQS_name,String str) {
+        String queueUrl = getSQSUrl(SQS_name);
+        //send the msgs
+            SendMessageRequest send_msg_request = SendMessageRequest.builder()
+                    .queueUrl(queueUrl)
+                    .messageBody(str)
+                    .delaySeconds(5)// Todo: remove ?
+                    .build();
+            sqs.sendMessage(send_msg_request);
+
     }
     public static List<Message> popSQS(String SQS_name) {
         String queueUrl = getSQSUrl(SQS_name);
