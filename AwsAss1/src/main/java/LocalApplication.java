@@ -2,6 +2,8 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.List;
 
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.regions.Region;
@@ -17,6 +19,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
+import software.amazon.awssdk.services.sqs.SqsClient;
 
 
 public class LocalApplication {
@@ -27,13 +30,21 @@ public class LocalApplication {
     private static long myID;
     private static int jobsCounter;
     private static int terminated=0;
+    public static String access_key_id = "";
+    public static String secret_access_key_id = "";
+    private static AwsBasicCredentials awsCreds = AwsBasicCredentials.create(access_key_id, secret_access_key_id);
+    private static String sqsManagerToLocal;
+    private static String sqsLocalsToManager = "sqsLocalsToManager";
+    private static String sqsTesting = "sqsTesting";
 
     //args[] = [inputfilename1, ..., inputfilenameN, outputfilename1,..., outputfilenameN, n, terminate]
     public static void main(String[] args) {
+
         int numOfFiles = (args.length-2)/2;
         terminated = Integer.parseInt(args[args.length - 1]);
         //myID is the local's ID for the manager to use
         myID = System.currentTimeMillis();
+        sqsManagerToLocal = "sqsManagerToLocal-"+myID;
         //check if theres an instance running with TAG-MANAGER AKA big bo$$
         //if there is no manager running, run a new instance of a manager, and create an SQS queueueue
         if(managerOnline()) {
@@ -41,12 +52,13 @@ public class LocalApplication {
             OpenS3();       //open a new bucket, and upload manager and workers JAR files
             runManager();   //create a new instance of a manager
 
-            OpenSQS("sqsLocalsToManager");      //this SQS is for ALL locals to upload jobs for the manager
+            OpenSQS(sqsLocalsToManager);      //this SQS is for ALL locals to upload jobs for the manager
 
             //manager is now online and ready for jobs
         }
+        OpenSQS(sqsTesting);      //this SQS is for ALL locals to upload jobs for the manager
 
-        OpenSQS("sqsManagerToLocal-"+myID);  //this SQS is for this local ONLY for messages about finished jobs from manager.
+        OpenSQS(sqsManagerToLocal);  //this SQS is for this local ONLY for messages about finished jobs from manager.
 
         //upload file from local folder to S3, receive a URL for the manager to use later
         //        upload_to_s3(args[0]);
@@ -115,16 +127,20 @@ public class LocalApplication {
 
 
     private static void finish() {
-        // check the SQS for massages of finished jobs. (Sleep or somthing)
-        //Result= checkSQS();
+
+        // check the SQS for massages of finished jobs. /TODO change from busy wait to somthing smarter..
         while(true){
-            break;
+            Result result= popSQS(sqsManagerToLocal);
+            String testMSG= popSQS(sqsTesting);
+            System.out.println("Result: "+result);
+            if(testMSG == "teminate")
+                break;
         }
         System.out.println("finished");
         if (terminated==1){
             deleteBucket();
         }
-        //makeHtmlFile(Result);
+        //TODO makeHtmlFile(Result);
     }
 
     private static void pushSQS(String SQS_name,String[] arguments) {
@@ -169,7 +185,7 @@ public class LocalApplication {
                 .build();
         String queueUrl = sqs.getQueueUrl(getQueueRequest).queueUrl();
     }
-    
+
         public static void uploadToS3(String path, String key)  {
         s3Client.putObject(PutObjectRequest.builder()
                         .bucket(bucket_name)
