@@ -21,28 +21,38 @@ public class LocalApplication {
 
     private static S3Client s3Client = S3Client.builder().region(Region.US_EAST_1).build();
     private static String bucket_name = "bucket-amitandtal";
-    private static int myID;
+    private static long myID;
+    private static int jobsCounter;
+    private static int terminated=0;
+
     //args[] = [inputfilename1, ..., inputfilenameN, outputfilename1,..., outputfilenameN, n, terminate]
     public static void main(String[] args) {
         int numOfFiles = (args.length-2)/2;
-
+        terminated = Integer.parseInt(args[args.length - 1]);
+        //myID is the local's ID for the manager to use
+        myID = System.currentTimeMillis();
         //check if theres an instance running with TAG-MANAGER AKA big bo$$
         //if there is no manager running, run a new instance of a manager, and create an SQS queueueue
-        myID = managerOnline(); //if there is no manager online, myID will be 1.
-        if(myID == 1) {// im the first local! :)
-            OpenSQS("sqsLocalsToManager");
-            OpenS3();
-            runManager();
+        if(managerOnline()) {
+            // im the first local! :)
+            OpenS3();       //open a new bucket, and upload manager and workers JAR files
+            runManager();   //create a new instance of a manager
+
+            OpenSQS("sqsLocalsToManager");      //this SQS is for ALL locals to upload jobs for the manager
+
+            //manager is now online and ready for jobs
         }
-        OpenSQS("sqsManagerToLocal"+myID);
+
+        OpenSQS("sqsManagerToLocal-"+myID);  //this SQS is for this local ONLY for messages about finished jobs from manager.
 
         //upload file from local folder to S3, receive a URL for the manager to use later
         //        upload_to_s3(args[0]);
         for(int i=0 ; i< numOfFiles; i++) {
             String key = args[i];
-            uploadToS3("../../../Input files/0689835604.txt", key);
+            uploadToS3("../../../Input files/"+key, key);
             //pushing job to SQS as a URL for the uploaded file
-            String[] arguments = {key, String.valueOf(myID), args[numOfFiles+i], args[args.length - 2]};
+            //arguments  -> [address, jobOwner, outputFileName,n,[terminating]]
+            String[] arguments = {key, String.valueOf(myID), args[numOfFiles+i], args[args.length - 2],String.valueOf(terminated)};
             pushSQS("sqsLocalsToManager", arguments);
             // manager is now able to take the job from SQS and process it. check the finished_SQS for massages of finished jobs.
         }
@@ -76,6 +86,7 @@ public class LocalApplication {
     }
 
 
+    //manager online returns id for local manager.  returned id=0 means that this local is the first local. next
     private static boolean managerOnline() {// by tag
         return false;
     }
@@ -91,8 +102,11 @@ public class LocalApplication {
     private static void finish() {
         // check the SQS for massages of finished jobs. (Sleep or somthing)
         //Result= checkSQS();
+        while(true){
+            break;
+        }
         System.out.println("finished");
-        if (terminated){
+        if (terminated==1){
             deleteBucket();
         }
         //makeHtmlFile(Result);

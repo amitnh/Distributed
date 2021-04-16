@@ -34,12 +34,15 @@ public class Manager implements Runnable{
 
         while(true) { // maybe sleep?
             String[] arguments = checkLocalAppSqs(); // check if SQS Queue has new msgs for me
-            //arguments  -> [address, jobOwner, outputFileName,n]   (output SQS = outputSQS#jobOwner)
+
+
+
+            //arguments  -> [address, jobOwner, outputFileName,n,[terminating]]   (output SQS = outputSQS#jobOwner)
             String address = arguments[0];
             String jobOwner = arguments[1];
             String outputFileName = arguments[2];
             n = Integer.parseInt(arguments[3]);
-
+            terminated = Integer.parseInt(arguments[4]);
             if (address != null && terminated !=1) { // if terminated dont add new Files, but still finish what he got so far
                 Job job = downloadAndPharse(address,nextJobID,jobOwner, outputFileName);// jobs contains his JobID
                 jobs.put(nextJobID++,job); // adds the Job to the jobs Map
