@@ -1,5 +1,6 @@
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.List;
 
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
@@ -14,11 +15,13 @@ import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
-
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.*;
 
 
 public class LocalApplication {
 
+    private static SqsClient sqs = SqsClient.builder().region(Region.US_EAST_1).build();
     private static S3Client s3Client = S3Client.builder().region(Region.US_EAST_1).build();
     private static String bucket_name = "bucket-amitandtal";
     private static long myID;
@@ -83,6 +86,18 @@ public class LocalApplication {
 
     //create an SQS named SQS_name
     private static void OpenSQS(String SQS_name) {
+        qsClient sqs = SqsClient.builder().region(Region.US_EAST_1).build();
+
+        try {
+            CreateQueueRequest request = CreateQueueRequest.builder()
+                    .queueName(SQS_name)
+                    .build();
+            CreateQueueResponse create_result = sqs.createQueue(request);
+        } catch (QueueNameExistsException e) {
+            throw e;
+
+        }
+
     }
 
 
@@ -113,10 +128,49 @@ public class LocalApplication {
     }
 
     private static void pushSQS(String SQS_name,String[] arguments) {
-        //push arguments to SQS_name
+        String queueUrl = getSQSUrl(SQS_name);
+        //send the msgs
+        for (int j=0;j<arguments.length;j++){
+            SendMessageRequest send_msg_request = SendMessageRequest.builder()
+                    .queueUrl(queueUrl)
+                    .messageBody("" + arguments[j])
+                    .delaySeconds(5)// Todo: remove ?
+                    .build();
+            sqs.sendMessage(send_msg_request);
+        }
+    }
+    private static List<Message> popSQS(String SQS_name) {
+        String queueUrl = getSQSUrl(SQS_name);
+        // receive messages from the queue
+        ReceiveMessageRequest receiveRequest = ReceiveMessageRequest.builder()
+                .queueUrl(queueUrl)
+                .build();
+        return sqs.receiveMessage(receiveRequest).messages();
     }
 
-    public static void uploadToS3(String path, String key)  {
+
+
+    public static void deletefromSQS(String SQS_name,List<Message> msgs)  {
+        String queueUrl = getSQSUrl(SQS_name);
+        // delete messages from the queue
+        for (Message m : msgs) {
+            DeleteMessageRequest deleteRequest = DeleteMessageRequest.builder()
+                    .queueUrl(queueUrl)
+                    .receiptHandle(m.receiptHandle())
+                    .build();
+            sqs.deleteMessage(deleteRequest);
+        }
+    }
+
+    private static String getSQSUrl(String SQS_name) {
+        //gets the URL
+        GetQueueUrlRequest getQueueRequest = GetQueueUrlRequest.builder()
+                .queueName(SQS_name)
+                .build();
+        String queueUrl = sqs.getQueueUrl(getQueueRequest).queueUrl();
+    }
+    
+        public static void uploadToS3(String path, String key)  {
         s3Client.putObject(PutObjectRequest.builder()
                         .bucket(bucket_name)
                         .key(key)
@@ -144,9 +198,11 @@ public class LocalApplication {
         System.out.println("Bucket deleted: " + bucket_name);
     }
 
-    private static void emptyBucket() {
-
-        }
+    }
+    public static void downloadFile(String key, String destination) {
+        s3Client.getObject(GetObjectRequest.builder().bucket(bucket_name).key(key).build(),
+                ResponseTransformer.toFile(Paths.get(destination)));
+        System.out.println("File downloaded: " + key);
     }
 
 }
