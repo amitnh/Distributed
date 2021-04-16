@@ -54,7 +54,6 @@ public class LocalApplication {
         S3Client s3Client;
         //open bucket
         Region region = Region.US_EAST_1;
-        bucket_name = "bucket-" + id;
 
         s3Client = S3Client.builder()
 //				.credentialsProvider(StaticCredentialsProvider.create(credentials))
@@ -93,7 +92,9 @@ public class LocalApplication {
         // check the SQS for massages of finished jobs. (Sleep or somthing)
         //Result= checkSQS();
         System.out.println("finished");
-
+        if (terminated){
+            deleteBucket();
+        }
         //makeHtmlFile(Result);
     }
 
@@ -108,6 +109,30 @@ public class LocalApplication {
                         .build(),
                 RequestBody.fromFile(new File(path)));
         System.out.println("File uploaded : " + key);
+    }
+    public static void deleteBucket() {
+        // -----------------empties the bucket-----------------
+        // Get a list of all the files in the bucket
+        ListObjectsV2Request listReq = ListObjectsV2Request.builder()
+                .bucket(bucket_name)
+//                .maxKeys(1)
+                .build();
+
+        ListObjectsV2Iterable listRes = s3Client.listObjectsV2Paginator(listReq);
+        for (S3Object content : listRes.contents()) {
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder().bucket(bucket_name).key(content.key()).build();
+            s3Client.deleteObject(deleteObjectRequest);
+            System.out.println("File deleted:\tKey: " + content.key() + "\tsize = " + content.size());
+        //------deletes the bucket--------------------
+        DeleteBucketRequest deleteBucketRequest = DeleteBucketRequest.builder().bucket(bucket_name).build();
+        s3Client.deleteBucket(deleteBucketRequest);
+
+        System.out.println("Bucket deleted: " + bucket_name);
+    }
+
+    private static void emptyBucket() {
+
+        }
     }
 
 }
