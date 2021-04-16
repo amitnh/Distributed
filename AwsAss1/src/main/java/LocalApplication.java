@@ -1,5 +1,6 @@
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.LinkedList;
 import java.util.List;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -20,6 +21,7 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
 import software.amazon.awssdk.services.sqs.SqsClient;
+import sun.awt.image.ImageWatched;
 
 
 public class LocalApplication {
@@ -62,11 +64,15 @@ public class LocalApplication {
         //        upload_to_s3(args[0]);
         for(int i=0 ; i< numOfFiles; i++) {
             String key = args[i];
-            AwsHelper.uploadToS3("../../../Input files/"+key, key);
+            AwsHelper.uploadToS3("../../../Input files/"+key, key);//TODO dont liky like this
+
             //pushing job to SQS as a URL for the uploaded file
             //arguments  -> [address, jobOwner, outputFileName,n,[terminating]]
             String[] arguments = {key, String.valueOf(myID), args[numOfFiles+i], args[args.length - 2],String.valueOf(terminated)};
-            AwsHelper.pushSQS("sqsLocalsToManager", arguments);
+            List<Message> list = new LinkedList<>();
+            list.add(AwsHelper.toMSG(arguments));
+
+            AwsHelper.pushSQS(sqsLocalsToManager, list);
             // manager is now able to take the job from SQS and process it. check the finished_SQS for massages of finished jobs.
         }
         //wait for all jobs to be ready at finished_SQS
@@ -91,10 +97,13 @@ public class LocalApplication {
 
         // check the SQS for massages of finished jobs. /TODO change from busy wait to somthing smarter..
         while(true){
-            Result result= AwsHelper.popSQS(sqsManagerToLocal);
-            String testMSG= AwsHelper.popSQS(sqsTesting);
-            System.out.println("Result: "+result);
-            if(testMSG == "teminate")
+            //Check SQS - sqsManagerToLocal for finished jobs(results)
+            List<Result> results = CheckFinishedJobs();
+            //TODO only for testing, remove before flight
+            List<String> testMSG= AwsHelper.fromMSG(AwsHelper.popSQS(sqsTesting),String.class);
+            System.out.println("Results: "+results);
+            System.out.println("testMSGs: "+testMSG);
+            if(jobsCounter==0)
                 break;
         }
         System.out.println("finished");
@@ -102,6 +111,13 @@ public class LocalApplication {
             AwsHelper.deleteBucket();
         }
         //TODO makeHtmlFile(Result);
+    }
+
+    private static List<Result> CheckFinishedJobs() {
+        List<Result> results = AwsHelper.fromMSG(AwsHelper.popSQS(sqsManagerToLocal),Result.class);
+        if(results.size()>0)
+            jobsCounter-= results.size();
+        return results;
     }
 
 

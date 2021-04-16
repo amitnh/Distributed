@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.sqs.model.*;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.LinkedList;
 import java.util.List;
 
 public class AwsHelper {
@@ -134,9 +135,25 @@ public class AwsHelper {
         System.out.println("File downloaded: " + key);
     }
 
+
+
+    //=============================================================================
+    //Json Helpers-
+    //=============================================================================
+
+    //cast message to T. for example, cast message to Review
     public static <T> T fromMSG(Message m,Class<T> c){
         return gson.fromJson(m.body(), c);
     }
+
+    public static <T> List<T> fromMSG(List<Message> Messages,Class<T> c){
+        List<T> tList = new LinkedList<>();
+        for(Message m: Messages)
+            tList.add(fromMSG(m, c));
+        return tList;
+    }
+
+    //cast object T to Message. for example, cast Review to message
     public static <T> Message toMSG(T t){
         String body =  gson.toJson(t);
         return Message.builder()
@@ -144,4 +161,10 @@ public class AwsHelper {
                 .build();
     }
 
+    public static <T> List<Message> toMSG(List<T> tList){
+        List<Message> mList = new LinkedList<>();
+        for(T t: tList)
+            mList.add(toMSG(t));
+        return mList;
+    }
 }

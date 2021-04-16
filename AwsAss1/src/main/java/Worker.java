@@ -27,23 +27,27 @@ public class Worker {
         while(true){
             //worker pulls a review from reviews_SQS added by the manager, performs necessary algorithms, and returns the result to the manager via results_SQS
             List<Message> reviews = AwsHelper.popSQS("SQSreview"); //maybe array of reviews to work on
+
             List<Message> results = ProccesReview(reviews);
             //push the result to results_SQS for the manager to continue process it
             AwsHelper.pushSQS("SQSresult",results);
             // remove the review from the jobs_SQS
-            removeJobFromSQS(review);
+            AwsHelper.deletefromSQS("SQSreview",reviews);
         }
         
     }
 
-    private static Result ProccesReview(List<Message>  review) {
-        Result result = new Result();
-        Message m;
-        Review review = AwsHelper.fromMSG(m)<Review>;
-        String reviewStr = review.getReview();
-        result.setSentimentAnalysis(sentimentAnalysisHandler.findSentiment(reviewStr));
-        result.setNamedEntityRecognition(namedEntityRecognitionHandler.printEntities(reviewStr)); // TODO change printEntiries becouse now its only printing to the screen.
-        return result;
+    private static List<Message> ProccesReview(List<Message>  reviews) {
+        List<Message> results = new LinkedList<>();
+        for(Message m:reviews) {
+            Review review = AwsHelper.fromMSG(m, Review.class);
+            Result result = new Result(review.getJobID(),review.getIndex());
+            String reviewStr = review.getText();
+            result.setSentimentAnalysis(sentimentAnalysisHandler.findSentiment(reviewStr));
+            result.setNamedEntityRecognition(namedEntityRecognitionHandler.findEntities(reviewStr)); // TODO make findEntities perfect.
+            results.add(AwsHelper.toMSG(result));
+        }
+        return results;
     }
 
 
