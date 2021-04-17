@@ -21,18 +21,17 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
 import software.amazon.awssdk.services.sqs.SqsClient;
-import sun.awt.image.ImageWatched;
 
 
 public class LocalApplication {
 
 
     private static long myID;
-    private static int jobsCounter;
+    private static int jobsCounter=-1;
     private static int terminated=0;
     public static String access_key_id = "";
     public static String secret_access_key_id = "";
-    private static AwsBasicCredentials awsCreds = AwsBasicCredentials.create(access_key_id, secret_access_key_id);
+    //private static AwsBasicCredentials awsCreds = AwsBasicCredentials.create(access_key_id, secret_access_key_id);
     private static String sqsManagerToLocal;
     private static String sqsLocalsToManager = "sqsLocalsToManager";
     private static String sqsTesting = "sqsTesting";
@@ -41,6 +40,7 @@ public class LocalApplication {
     public static void main(String[] args) {
 
         int numOfFiles = (args.length-2)/2;
+        jobsCounter=numOfFiles;
         //myID is the local's ID for the manager to use
         myID = System.currentTimeMillis();
         sqsManagerToLocal = "sqsManagerToLocal-"+myID;
@@ -52,6 +52,7 @@ public class LocalApplication {
             AwsHelper.uploadToS3("../Manager/AwsAss1.jar","Manager");
             AwsHelper.uploadToS3("../Worker/AwsAss1.jar","Worker");
             runManager();   //create a new instance of a manager
+
             AwsHelper.OpenSQS(sqsLocalsToManager);      //this SQS is for ALL locals to upload jobs for the manager
             //manager is now online and ready for jobs
         }
@@ -62,7 +63,7 @@ public class LocalApplication {
         //        upload_to_s3(args[0]);
         for(int i=0 ; i< numOfFiles; i++) {
             String key = args[i];
-            AwsHelper.uploadToS3("../Input files/"+key, key);//TODO dont liky like this
+            AwsHelper.uploadToS3("../Input files/"+key, key);
 
             //pushing job to SQS as a URL for the uploaded file
             //arguments  -> [address, jobOwner, outputFileName,n,[terminating]]
@@ -85,6 +86,8 @@ public class LocalApplication {
 
 
     private static void runManager() {
+        System.out.println("running manager");
+
         AwsHelper.startInstance("Manager","Manager.jar");
 
     }
@@ -98,8 +101,10 @@ public class LocalApplication {
             List<Result> results = CheckFinishedJobs();
             //TODO only for testing, remove before flight
             List<String> testMSG= AwsHelper.fromMSG(AwsHelper.popSQS(sqsTesting),String.class);
-            System.out.println("Results: "+results);
-            System.out.println("testMSGs: "+testMSG);
+            if (!results.isEmpty())
+                System.out.println("Results sentiment:"+results.get(0).sentiment + "\nentities: " + results.get(0).entities);
+            if (!testMSG.isEmpty())
+                System.out.println("testMSGs: "+testMSG.get(0));
             if(jobsCounter==0)
                 break;
         }

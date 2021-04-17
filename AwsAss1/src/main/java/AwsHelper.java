@@ -28,7 +28,7 @@ public class AwsHelper {
     public static int protection=0; //todo remove later
     public static int maxNumOfInstances=5; //todo remove later
 
-    public static String bucket_name = "bucket-amitandtal";
+    public static String bucket_name = "bucket-amitandtal1";
     public static int NumOfRetriveMSGs = 1;
     public static String sqsTesting = "sqsTesting";
     public static String sqsLocalsToManager = "sqsLocalsToManager";
@@ -155,12 +155,13 @@ public class AwsHelper {
             DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder().bucket(bucket_name).key(content.key()).build();
             s3Client.deleteObject(deleteObjectRequest);
             System.out.println("File deleted:\tKey: " + content.key() + "\tsize = " + content.size());
+        }
             //------deletes the bucket--------------------
             DeleteBucketRequest deleteBucketRequest = DeleteBucketRequest.builder().bucket(bucket_name).build();
             s3Client.deleteBucket(deleteBucketRequest);
 
             System.out.println("Bucket deleted: " + bucket_name);
-        }
+
 
 
     }
@@ -178,16 +179,16 @@ public class AwsHelper {
         if(++protection>maxNumOfInstances) {
             return;
         }
-        IamInstanceProfileSpecification role = IamInstanceProfileSpecification.builder()
-                .name(nameTag)
-                .build();
+       // IamInstanceProfileSpecification role = IamInstanceProfileSpecification.builder()
+       //         .name(nameTag+System.currentTimeMillis())
+       //         .build();
         RunInstancesRequest runRequest = RunInstancesRequest.builder()
                 .imageId(amiId)
-                .instanceType(InstanceType.T2_SMALL)
+                .instanceType(InstanceType.T2_MICRO)
                 .maxCount(1)
                 .minCount(1)
                 .userData(getDataScript(jarAddress))
-                .iamInstanceProfile(role)
+                //.iamInstanceProfile(role)
                 .build();
         RunInstancesResponse buildManagerResponse = ec2.runInstances(runRequest);
         String instanceId = buildManagerResponse.instances().get(0).instanceId();
