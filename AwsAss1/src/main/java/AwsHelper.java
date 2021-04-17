@@ -218,15 +218,16 @@ public class AwsHelper {
     public static void terminateInstancesByTag(String tagName) {
         DescribeInstancesRequest request = DescribeInstancesRequest.builder().build();
         DescribeInstancesResponse response = ec2.describeInstances(request);
-        for(Reservation reservation : response.reservations()) {
-        for(Instance instance : reservation.instances()) {
-            for (Tag tag : instance.tags()) {
-                if ((tag.value().substring(0,tagName.length()-1).equals(tagName))) { // todo check
-                    List<String> instanceIds = new LinkedList<String>();
-                    instanceIds.add(instance.instanceId());
-                    ec2.terminateInstances(TerminateInstancesRequest.builder()
-                            .instanceIds(instanceIds)
-                            .build());
+        for (Reservation reservation : response.reservations()) {
+            for (Instance instance : reservation.instances()) {
+                for (Tag tag : instance.tags()) {
+                    if ((tag.value().substring(0, tagName.length() - 1).equals(tagName))) { // todo check
+                        List<String> instanceIds = new LinkedList<String>();
+                        instanceIds.add(instance.instanceId());
+                        ec2.terminateInstances(TerminateInstancesRequest.builder()
+                                .instanceIds(instanceIds)
+                                .build());
+                    }
                 }
             }
         }
