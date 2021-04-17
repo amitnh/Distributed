@@ -137,15 +137,16 @@ public class Manager implements Runnable{
             List<Message> results = AwsHelper.popSQS("SQSresult");
             List<Job> finishedJobs = saveResult(results); // if not duplicated, and if Reviews.length=Results.length returns jobID else return -1
 
-            if (finishedJobID != -1) {  // finished
-                string address = uploadResultsToS3(finishedJobID);
-                sendToLocalAppSQS(address); // updating the localapp sqs for the new result
-                if (terminated == 1) {
-                    terminateAllWorkers(); //numOfCurrWorkers
-                    createResponseMsg();// not sure what that means
-                    terminate();
-                }
+            for (Job j:finishedJobs){
+                AwsHelper.pushSQS(AwsHelper.sqsLocalsToManager + j.jobOwner,j.outputFileName);
+                jobs.remove(j.jobID);
             }
+            if (jobs.isEmpty() && terminated == 1) {
+                terminateAllWorkers(); //numOfCurrWorkers
+                createResponseMsg();// not sure what that means
+                terminate();
+            }
+
         }
     }
 
@@ -167,10 +168,13 @@ public class Manager implements Runnable{
             f.delete();
 
             //check for last review in job
-            Job j = jobs.get(r.jobID);
-            j.remainingResponses--;
-            if (j.remainingResponses<=0)// finihed with that job
-                finishedJobs.add(j);
+            try {// maybe job already finished
+                Job j = jobs.get(r.jobID);
+                j.remainingResponses--;
+                if (j.remainingResponses <= 0)// finihed with that job
+                    finishedJobs.add(j);
+            }
+            catch(Exception e) {}
         }
 
         AwsHelper.deletefromSQS("SQSreview",results);
