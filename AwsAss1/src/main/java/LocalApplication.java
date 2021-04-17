@@ -46,24 +46,23 @@ public class LocalApplication {
         sqsManagerToLocal = "sqsManagerToLocal-"+myID;
         //check if theres an instance running with TAG-MANAGER AKA big bo$$
         //if there is no manager running, run a new instance of a manager, and create an SQS queueueue
-        if(AwsHelper.isManagerOnline()) {
+        if(!AwsHelper.isManagerOnline()) {
             // im the first local! :)
             AwsHelper.OpenS3();       //open a new bucket, and upload manager and workers JAR files
+            AwsHelper.uploadToS3("../Manager/AwsAss1.jar","Manager");
+            AwsHelper.uploadToS3("../Worker/AwsAss1.jar","Worker");
             runManager();   //create a new instance of a manager
-
             AwsHelper.OpenSQS(sqsLocalsToManager);      //this SQS is for ALL locals to upload jobs for the manager
-
             //manager is now online and ready for jobs
         }
         AwsHelper.OpenSQS(sqsTesting);      //TODO remove, this SQS is for ALL locals to upload jobs for the manager
-
         AwsHelper.OpenSQS(sqsManagerToLocal);  //this SQS is for this local ONLY for messages about finished jobs from manager.
 
         //upload file from local folder to S3, receive a URL for the manager to use later
         //        upload_to_s3(args[0]);
         for(int i=0 ; i< numOfFiles; i++) {
             String key = args[i];
-            AwsHelper.uploadToS3("../../../Input files/"+key, key);//TODO dont liky like this
+            AwsHelper.uploadToS3("../Input files/"+key, key);//TODO dont liky like this
 
             //pushing job to SQS as a URL for the uploaded file
             //arguments  -> [address, jobOwner, outputFileName,n,[terminating]]
