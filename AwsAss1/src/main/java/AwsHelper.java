@@ -25,6 +25,9 @@ public class AwsHelper {
     public static S3Client s3Client = S3Client.builder().region(Region.US_EAST_1).build();
     public static Ec2Client ec2 = Ec2Client.builder().region(Region.US_EAST_1).build();
 
+    public static int protection=0; //todo remove later
+    public static int maxNumOfInstances=5; //todo remove later
+
     public static String bucket_name = "bucket-amitandtal";
     public static int NumOfRetriveMSGs = 1;
     public static String sqsTesting = "sqsTesting";
@@ -172,6 +175,9 @@ public class AwsHelper {
     //=============================================================================
 
     public static void startInstance(String nameTag,String jarAddress) {
+        if(++protection>maxNumOfInstances) {
+            return;
+        }
         IamInstanceProfileSpecification role = IamInstanceProfileSpecification.builder()
                 .name(nameTag)
                 .build();
@@ -211,7 +217,7 @@ public class AwsHelper {
         for (Reservation reservation : managerResponse.reservations())
             for (Instance instance : reservation.instances())
                 for (Tag tag : instance.tags())
-                    if (tag.value().substring(0,7).equals("Manager")) // todo check
+                    if (tag.value().startsWith("Manager")) // todo check
                         return true;
         return false;
     }
@@ -221,8 +227,8 @@ public class AwsHelper {
         for (Reservation reservation : response.reservations()) {
             for (Instance instance : reservation.instances()) {
                 for (Tag tag : instance.tags()) {
-                    if ((tag.value().substring(0, tagName.length() - 1).equals(tagName))) { // todo check
-                        List<String> instanceIds = new LinkedList<String>();
+                    if ((tag.value().startsWith(tagName))) { // todo check
+                        List<String> instanceIds = new LinkedList<>();
                         instanceIds.add(instance.instanceId());
                         ec2.terminateInstances(TerminateInstancesRequest.builder()
                                 .instanceIds(instanceIds)
