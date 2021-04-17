@@ -77,6 +77,7 @@ public class Manager implements Runnable{
         AwsHelper.pushSQS("SQSreview",list);
     }
 
+
     private static int createNewWorkers(int numOfReviews) {
         AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n createNewWorkers"); // todo delete
 
