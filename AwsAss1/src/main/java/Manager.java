@@ -56,17 +56,25 @@ public class Manager implements Runnable{
 
                 // getting the estimated amount of currentReviews----------------
                 // String attr = "ApproximateNumberOfMessages";// todo fix
-               // Map<String, String> attributes = AwsHelper.sqs.getQueueAttributes(new GetQueueAttributesRequest(AwsHelper.getSQSUrl("SQSreviews")).withAttributeNames(attr)).getAttributes();
+               // Map<String, String> attributes = AwsHelper.sqs.getQueueAttributes(new GetQueueAttributesRequest(AwsHelper.getSQSUrl("SQSreview")).withAttributeNames(attr)).getAttributes();
                // int currentReviews = Integer.parseInt(attributes.get(attr));
                 int currentReviews = 0;
                 //---------------------------------------------------------------
                     numOfCurrWorkers = createNewWorkers(job.reviews.size()+currentReviews); // if needed adds new worker instances, checks with SQS size
-                    sendReviewsToWorkersSqs(job);
+                pushJobToSQSreview(job);
                 if (terminated != 1) {
                     break;
                 }
             }
         }
+    }
+    // push reviews to SQSreview from a Job
+    private static void pushJobToSQSreview(Job job) {
+        List<Message> list = new LinkedList<>();
+        for (Review r:job.reviews){
+            list.add(AwsHelper.toMSG(r));
+        }
+        AwsHelper.pushSQS("SQSreview",list);
     }
 
     private static int createNewWorkers(int numOfReviews) {
@@ -126,11 +134,8 @@ public class Manager implements Runnable{
         AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager's thread is up");// todo delete
 
         while (true) {
-            /// maybe another Thread
-            Result result = checkResultsSqs();
-            if (result != null) {
-                int finishedJobID = saveResult(result); // if not duplicated, and if Reviews.length=Results.length returns jobID else return -1
-            }
+            List<Message> results = AwsHelper.popSQS("SQSresult");
+            List<Job> finishedJobs = saveResult(results); // if not duplicated, and if Reviews.length=Results.length returns jobID else return -1
 
             if (finishedJobID != -1) {  // finished
                 string address = uploadResultsToS3(finishedJobID);
@@ -142,5 +147,34 @@ public class Manager implements Runnable{
                 }
             }
         }
+    }
+
+    // check if the result is not duplicated, and if Reviews.length=Results.length returns jobID else return -1
+    private List<Job> saveResult(List<Message> results) {
+        List<Job> finishedJobs = new LinkedList<>();
+        for (Message m :results){
+            Result r = AwsHelper.fromMSG(m,Result.class);
+
+            //check fo duplication
+            String jobOutputName=jobs.get(r.jobID).outputFileName;
+            int index = r.Reviewindex;
+            String key = jobOutputName + "/" + index;
+            if (AwsHelper.doesFileExists(key)) continue;
+
+            //upload file to S3
+            File f = new File("/"+key);
+            AwsHelper.uploadToS3("/"+key,key);
+            f.delete();
+
+            //check for last review in job
+            Job j = jobs.get(r.jobID);
+            j.remainingResponses--;
+            if (j.remainingResponses<=0)// finihed with that job
+                finishedJobs.add(j);
+        }
+
+        AwsHelper.deletefromSQS("SQSreview",results);
+
+        return finishedJobs;
     }
 }

@@ -129,6 +129,16 @@ public class AwsHelper {
                 RequestBody.fromFile(new File(path)));
         System.out.println("File uploaded : " + key);
     }
+    public static boolean doesFileExists(String key) {
+        try {
+            s3Client.getObject(GetObjectRequest.builder().bucket(bucket_name).key(key).build(),
+                    ResponseTransformer.toFile(Paths.get(key)));
+        } catch (Exception e) {
+            return false;
+            }
+        return true;
+        }
+
     public static void deleteBucket() {
         // -----------------empties the bucket-----------------
         // Get a list of all the files in the bucket
