@@ -142,13 +142,14 @@ public class Manager implements Runnable{
                 jobs.remove(j.jobID);
             }
             if (jobs.isEmpty() && terminated == 1) {
-                terminateAllWorkers(); //numOfCurrWorkers
-                createResponseMsg();// not sure what that means
-                terminate();
+                AwsHelper.terminateInstancesByTag("Worker"); //numOfCurrWorkers
+               // createResponseMsg();// not sure what that means
+                AwsHelper.terminateInstancesByTag("Manager");
             }
 
         }
     }
+
 
     // check if the result is not duplicated, and if Reviews.length=Results.length returns jobID else return -1
     private List<Job> saveResult(List<Message> results) {

@@ -46,7 +46,7 @@ public class LocalApplication {
         sqsManagerToLocal = "sqsManagerToLocal-"+myID;
         //check if theres an instance running with TAG-MANAGER AKA big bo$$
         //if there is no manager running, run a new instance of a manager, and create an SQS queueueue
-        if(managerOnline()) {
+        if(AwsHelper.isManagerOnline()) {
             // im the first local! :)
             AwsHelper.OpenS3();       //open a new bucket, and upload manager and workers JAR files
             runManager();   //create a new instance of a manager
@@ -84,10 +84,7 @@ public class LocalApplication {
     }
 
 
-    //manager online returns id for local manager.  returned id=0 means that this local is the first local. next
-    private static boolean managerOnline() {// by tag
-        return false;
-    }
+
     private static void runManager() {
         AwsHelper.startInstance("Manager","Manager.jar");
 

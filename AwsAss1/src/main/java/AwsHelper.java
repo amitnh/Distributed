@@ -6,7 +6,7 @@ import software.amazon.awssdk.services.ec2.Ec2Client;
 import software.amazon.awssdk.services.ec2.model.*;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
-import software.amazon.awssdk.services.s3.model.Tag;
+import software.amazon.awssdk.services.ec2.model.Tag;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
@@ -205,6 +205,32 @@ public class AwsHelper {
         return Base64.getEncoder().encodeToString(str.getBytes());
     }
 
+    public static boolean isManagerOnline() {
+        DescribeInstancesRequest managerRequest = DescribeInstancesRequest.builder().build();
+        DescribeInstancesResponse managerResponse = ec2.describeInstances(managerRequest);
+        for (Reservation reservation : managerResponse.reservations())
+            for (Instance instance : reservation.instances())
+                for (Tag tag : instance.tags())
+                    if (tag.value().substring(0,7).equals("Manager")) // todo check
+                        return true;
+        return false;
+    }
+    public static void terminateInstancesByTag(String tagName) {
+        DescribeInstancesRequest request = DescribeInstancesRequest.builder().build();
+        DescribeInstancesResponse response = ec2.describeInstances(request);
+        for(Reservation reservation : response.reservations()) {
+        for(Instance instance : reservation.instances()) {
+            for (Tag tag : instance.tags()) {
+                if ((tag.value().substring(0,tagName.length()-1).equals(tagName))) { // todo check
+                    List<String> instanceIds = new LinkedList<String>();
+                    instanceIds.add(instance.instanceId());
+                    ec2.terminateInstances(TerminateInstancesRequest.builder()
+                            .instanceIds(instanceIds)
+                            .build());
+                }
+            }
+        }
+    }
 
     //=============================================================================
     //Json Helpers-
