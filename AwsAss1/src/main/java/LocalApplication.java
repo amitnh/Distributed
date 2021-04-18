@@ -49,8 +49,8 @@ public class LocalApplication {
         if(!AwsHelper.isManagerOnline()) {
             // im the first local! :)
             AwsHelper.OpenS3();       //open a new bucket, and upload manager and workers JAR files
-            AwsHelper.uploadToS3("../Manager/AwsAss1.jar","Manager");
-            AwsHelper.uploadToS3("../Worker/AwsAss1.jar","Worker");
+            AwsHelper.uploadToS3("../Manager/AwsAss1.jar","Manager.jar");
+            AwsHelper.uploadToS3("../Worker/AwsAss1.jar","Worker.jar");
             runManager();   //create a new instance of a manager
 
             AwsHelper.OpenSQS(sqsLocalsToManager);      //this SQS is for ALL locals to upload jobs for the manager

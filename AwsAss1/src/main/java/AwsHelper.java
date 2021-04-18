@@ -184,11 +184,13 @@ public class AwsHelper {
                 .build();
         RunInstancesRequest runRequest = RunInstancesRequest.builder()
                 .imageId(amiId)
-                .instanceType(InstanceType.T2_MICRO)
+                .instanceType(InstanceType.T2_SMALL)
                 .maxCount(1)
                 .minCount(1)
-                .userData(getDataScript(jarAddress))
+                .userData(getDataScript(jarAddress))//todo test changed from jarAddress
                 .iamInstanceProfile(role)
+                .keyName("amital")
+                .securityGroupIds("sg-5422235a")
                 .build();
         RunInstancesResponse buildManagerResponse = ec2.runInstances(runRequest);
         String instanceId = buildManagerResponse.instances().get(0).instanceId();
@@ -204,11 +206,11 @@ public class AwsHelper {
 
 
     }
-    private static String getDataScript(String jarAddress) {
+    private static String getDataScript(String file) {
         String str = "";
         str+="#! /bin/bash\n";
-        str+="wget https://" +bucket_name +".s3.amazonaws.com/"+ jarAddress + "\n";// todo change the s3address
-        str+="java -jar " + jarAddress + "\n";
+        str+="wget https://" +bucket_name +".s3.amazonaws.com/"+ file + "\n";// todo change the s3address
+        str+="java -jar -Xmx550m " + file + "\n";
         return Base64.getEncoder().encodeToString(str.getBytes());
 
     }
