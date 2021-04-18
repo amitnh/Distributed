@@ -58,6 +58,8 @@ public class LocalApplication {
         }
         AwsHelper.OpenSQS(sqsTesting);      //TODO remove, this SQS is for ALL locals to upload jobs for the manager
         AwsHelper.OpenSQS(sqsManagerToLocal);  //this SQS is for this local ONLY for messages about finished jobs from manager.
+        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\ntesting sqsTesting");// todo delete
+
 
         //upload file from local folder to S3, receive a URL for the manager to use later
         //        upload_to_s3(args[0]);
@@ -98,13 +100,24 @@ public class LocalApplication {
         // check the SQS for massages of finished jobs. /TODO change from busy wait to somthing smarter..
         while(true){
             //Check SQS - sqsManagerToLocal for finished jobs(results)
-            List<Result> results = CheckFinishedJobs();
+            List<Message> resultsMsgs = CheckFinishedJobs();
+            List<Result> results = AwsHelper.fromMSG(resultsMsgs,Result.class);
             //TODO only for testing, remove before flight
-            List<String> testMSG= AwsHelper.fromMSG(AwsHelper.popSQS(sqsTesting),String.class);
+            List<Message> testlist = AwsHelper.popSQS(sqsTesting);
+
+            //List<String> testMSG= AwsHelper.fromMSG(testlist,String.class);
+            if (!testlist.isEmpty()) {
+                String testMSG = testlist.get(0).body();
+                System.out.println("testMSGs: " + testMSG);//.get(0)
+            }
             if (!results.isEmpty())
                 System.out.println("Results sentiment:"+results.get(0).sentiment + "\nentities: " + results.get(0).entities);
-            if (!testMSG.isEmpty())
-                System.out.println("testMSGs: "+testMSG.get(0));
+          //  if (!testMSG.isEmpty())
+            //    System.out.println("testMSGs: "+testMSG.get(0));//
+
+            AwsHelper.deletefromSQS("sqsTesting",testlist);
+            AwsHelper.deletefromSQS(sqsManagerToLocal,resultsMsgs);
+
             if(jobsCounter==0)
                 break;
         }
@@ -113,10 +126,11 @@ public class LocalApplication {
             AwsHelper.deleteBucket();
         }
         //TODO makeHtmlFile(Result);
+
     }
 
-    private static List<Result> CheckFinishedJobs() {
-        List<Result> results = AwsHelper.fromMSG(AwsHelper.popSQS(sqsManagerToLocal),Result.class);
+    private static List<Message> CheckFinishedJobs() {
+        List<Message> results = AwsHelper.popSQS(sqsManagerToLocal);
         if(results.size()>0)
             jobsCounter-= results.size();
         return results;

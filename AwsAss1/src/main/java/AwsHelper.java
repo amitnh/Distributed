@@ -19,7 +19,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class AwsHelper {
-    public static String amiId = "ami-081475026498ccd01";
+    public static String amiId = "ami-0009c3f63fca71e34";//got java8
     public static  Gson gson = new Gson();
     public static SqsClient sqs = SqsClient.builder().region(Region.US_EAST_1).build();
     public static S3Client s3Client = S3Client.builder().region(Region.US_EAST_1).build();
@@ -179,16 +179,16 @@ public class AwsHelper {
         if(++protection>maxNumOfInstances) {
             return;
         }
-       // IamInstanceProfileSpecification role = IamInstanceProfileSpecification.builder()
-       //         .name(nameTag+System.currentTimeMillis())
-       //         .build();
+        IamInstanceProfileSpecification role = IamInstanceProfileSpecification.builder()
+                .name("EMR_EC2_DefaultRole") //arn:aws:iam::824286680564:role/EMR_EC2_DefaultRole
+                .build();
         RunInstancesRequest runRequest = RunInstancesRequest.builder()
                 .imageId(amiId)
                 .instanceType(InstanceType.T2_MICRO)
                 .maxCount(1)
                 .minCount(1)
                 .userData(getDataScript(jarAddress))
-                //.iamInstanceProfile(role)
+                .iamInstanceProfile(role)
                 .build();
         RunInstancesResponse buildManagerResponse = ec2.runInstances(runRequest);
         String instanceId = buildManagerResponse.instances().get(0).instanceId();
@@ -210,6 +210,7 @@ public class AwsHelper {
         str+="wget https://" +bucket_name +".s3.amazonaws.com/"+ jarAddress + "\n";// todo change the s3address
         str+="java -jar " + jarAddress + "\n";
         return Base64.getEncoder().encodeToString(str.getBytes());
+
     }
 
     public static boolean isManagerOnline() {

@@ -19,11 +19,12 @@ public class Manager implements Runnable{
     public static void main(String[] args) {
         //todo start mngr to testsqs
         AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager is up");// todo delete
+
         Manager responseThread = new Manager();
         Thread thread = new Thread(responseThread);
         thread.start();
 
-        while(true) { // maybe sleep?
+        while(true) {
             List<Message> msgs = AwsHelper.popSQS(AwsHelper.sqsLocalsToManager); // check if SQS Queue has new msgs for me
 
             for (Message m : msgs) {
