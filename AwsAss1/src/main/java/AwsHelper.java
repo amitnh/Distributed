@@ -177,34 +177,40 @@ public class AwsHelper {
     //=============================================================================
 
     public static void startInstance(String nameTag,String jarAddress) {
+        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n startInstance. nameTag:" +nameTag); // todo delete
+
         if(++protection>maxNumOfInstances) {
             return;
         }
-        IamInstanceProfileSpecification role = IamInstanceProfileSpecification.builder()
-                .name("EMR_EC2_DefaultRole") //arn:aws:iam::824286680564:role/EMR_EC2_DefaultRole
-                .build();
-        RunInstancesRequest runRequest = RunInstancesRequest.builder()
-                .imageId(amiId)
-                .instanceType(InstanceType.T2_SMALL)
-                .maxCount(1)
-                .minCount(1)
-                .userData(getDataScript(jarAddress))//todo test changed from jarAddress
-                .iamInstanceProfile(role)
-                .keyName("amital")
-                .securityGroupIds("sg-5422235a")
-                .build();
-        RunInstancesResponse buildManagerResponse = ec2.runInstances(runRequest);
-        String instanceId = buildManagerResponse.instances().get(0).instanceId();
+        try {
+            IamInstanceProfileSpecification role = IamInstanceProfileSpecification.builder()
+                    .name("EMR_EC2_DefaultRole") //arn:aws:iam::824286680564:role/EMR_EC2_DefaultRole
+                    .build();
+            RunInstancesRequest runRequest = RunInstancesRequest.builder()
+                    .imageId(amiId)
+                    .instanceType(InstanceType.T2_SMALL)
+                    .maxCount(1)
+                    .minCount(1)
+                    .userData(getDataScript(jarAddress))
+                    .iamInstanceProfile(role)
+                    .keyName("amital")
+                    .securityGroupIds("sg-7e7c937d")//,sg-5422235a
+                    .build();
+            RunInstancesResponse buildManagerResponse = ec2.runInstances(runRequest);
+            String instanceId = buildManagerResponse.instances().get(0).instanceId();
 
-        // Now we will add a tag
-        Tag tag = Tag.builder().key("Name").value(nameTag).build();
+            // Now we will add a tag
+            Tag tag = Tag.builder().key("Name").value(nameTag).build();
 
-        CreateTagsRequest tagsRequest = CreateTagsRequest.builder()
-                .resources(instanceId)
-                .tags(tag)
-                .build();
-        ec2.createTags(tagsRequest);
-
+            CreateTagsRequest tagsRequest = CreateTagsRequest.builder()
+                    .resources(instanceId)
+                    .tags(tag)
+                    .build();
+            ec2.createTags(tagsRequest);
+        }
+        catch(Exception e){
+            AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n startInstance. Error:" +e); // todo delete
+        }
 
     }
     private static String getDataScript(String file) {

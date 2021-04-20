@@ -16,6 +16,8 @@ public class Worker {
     //static namedEntityRecognitionHandler namedEntityRecognitionHandler  = new namedEntityRecognitionHandler();todo add
 
     public static void main(String[] args) {
+        System.out.println("Worker Main");
+        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n Worker is up");// todo delete
 
         while(true){
             //worker pulls a review from reviews_SQS added by the manager, performs necessary algorithms, and returns the result to the manager via results_SQS

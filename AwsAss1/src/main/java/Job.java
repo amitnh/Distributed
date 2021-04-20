@@ -15,7 +15,7 @@ public class Job {
         this.jobID = jobID;
         this.title = title;
         this.reviews = reviews;
-        this.remainingResponses = results.length;
+        this.remainingResponses = reviews.size();
         this.results = new Result[remainingResponses];
         this.outputFileName = outputFileName;
     }

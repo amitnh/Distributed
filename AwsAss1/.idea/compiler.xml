@@ -6,9 +6,10 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="DSPS" />
         <module name="AwsAss1" />
         <module name="mavenTest" />
-        <module name="DSPS" />
+        <module name="AwsAss1 (1)" />
       </profile>
     </annotationProcessing>
   </component>

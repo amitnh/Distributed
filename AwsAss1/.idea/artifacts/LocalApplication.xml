@@ -1,9 +1,9 @@
 <component name="ArtifactManager">
-  <artifact type="jar" name="Worker">
-    <output-path>$PROJECT_DIR$/target/Worker</output-path>
+  <artifact type="jar" name="LocalApplication">
+    <output-path>$PROJECT_DIR$/target/LocalApplication</output-path>
     <root id="archive" name="AwsAss1.jar">
       <element id="directory" name="META-INF">
-        <element id="file-copy" path="$PROJECT_DIR$/target/Worker/META-INF/MANIFEST.MF" />
+        <element id="file-copy" path="$PROJECT_DIR$/target/LocalApplication/META-INF/MANIFEST.MF" />
       </element>
       <element id="module-output" name="AwsAss1" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/io/netty/netty-codec/4.1.33.Final/netty-codec-4.1.33.Final.jar" path-in-jar="/" />

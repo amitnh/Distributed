@@ -38,6 +38,8 @@ public class LocalApplication {
 
     //args[] = [inputfilename1, ..., inputfilenameN, outputfilename1,..., outputfilenameN, n, terminate]
     public static void main(String[] args) {
+        System.out.println("Local Main");
+        //AwsHelper.OpenSQS(sqsTesting);      //TODO remove, this SQS is for ALL locals to upload jobs for the manager
 
         int numOfFiles = (args.length-2)/2;
         jobsCounter=numOfFiles;
@@ -47,6 +49,8 @@ public class LocalApplication {
         //check if theres an instance running with TAG-MANAGER AKA big bo$$
         //if there is no manager running, run a new instance of a manager, and create an SQS queueueue
         if(!AwsHelper.isManagerOnline()) {
+            System.out.println("Manager not Online");// todo delete
+
             // im the first local! :)
             AwsHelper.OpenS3();       //open a new bucket, and upload manager and workers JAR files
             AwsHelper.uploadToS3("../Manager/AwsAss1.jar","Manager.jar");
@@ -56,7 +60,6 @@ public class LocalApplication {
             AwsHelper.OpenSQS(sqsLocalsToManager);      //this SQS is for ALL locals to upload jobs for the manager
             //manager is now online and ready for jobs
         }
-        AwsHelper.OpenSQS(sqsTesting);      //TODO remove, this SQS is for ALL locals to upload jobs for the manager
         AwsHelper.OpenSQS(sqsManagerToLocal);  //this SQS is for this local ONLY for messages about finished jobs from manager.
         AwsHelper.pushSQS(AwsHelper.sqsTesting,"\ntesting sqsTesting");// todo delete
 
