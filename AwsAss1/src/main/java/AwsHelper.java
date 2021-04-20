@@ -128,7 +128,7 @@ public class AwsHelper {
         s3Client.putObject(PutObjectRequest.builder()
                         .bucket(bucket_name)
                         .key(key)
-                        .acl(ObjectChanelACL.PUBLIC_READ_WRITE)
+                        .acl(ObjectCannedACL.PUBLIC_READ_WRITE)
                         .build(),
                 RequestBody.fromFile(new File(path)));
         System.out.println("File uploaded : " + key);
