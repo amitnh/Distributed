@@ -112,8 +112,7 @@ public class LocalApplication {
             }
             if (!results.isEmpty())
                 System.out.println("Results sentiment:"+results.get(0).sentiment + "\nentities: " + results.get(0).entities);
-          //  if (!testMSG.isEmpty())
-            //    System.out.println("testMSGs: "+testMSG.get(0));//
+
 
             AwsHelper.deletefromSQS("sqsTesting",testlist);
             AwsHelper.deletefromSQS(sqsManagerToLocal,resultsMsgs);

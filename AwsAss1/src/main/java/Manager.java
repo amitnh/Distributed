@@ -28,17 +28,24 @@ public class Manager implements Runnable{
             List<Message> msgs = AwsHelper.popSQS(AwsHelper.sqsLocalsToManager); // check if SQS Queue has new msgs for me
 
             for (Message m : msgs) {
-                String[] arguments = AwsHelper.fromMSG(m,String[].class);
+                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\nmanager msg from sqsLocalsToManager:\n" + m.body());// todo delete
+
+                String[] arguments = m.body().substring(1,m.body().length()-1).replaceAll("\"","").split(","); // body String -> String[]
                 //arguments  -> [address, jobOwner, outputFileName,n,[terminating]]   (output SQS = outputSQS#jobOwner)
+                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\nmanager msg from sqsLocalsToManager arguments:\n" +arguments[1]);// todo delete
+
                 String address = arguments[0];
                 String jobOwner = arguments[1];
                 String outputFileName = arguments[2];
                 n = Integer.parseInt(arguments[3]);
                 terminated = Integer.parseInt(arguments[4]); //if local has multiple jobs he needs to send 1 only in the last job !
+                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\nmanager msg from sqsLocalsToManager arguments:\n" +arguments[3]);// todo delete
 
                  // if terminated dont add new Files, but still finish what he got so far
                     Job job = downloadAndParse(address, jobOwner, outputFileName);// jobs contains his JobID
-                    jobs.put(nextJobID++, job); // adds the Job to the jobs Map
+                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\nmanager downloadAndParse:\n" +job.title);// todo delete
+
+                jobs.put(nextJobID++, job); // adds the Job to the jobs Map
 
                 // getting the estimated amount of currentReviews----------------
                 // String attr = "ApproximateNumberOfMessages";// todo fix
