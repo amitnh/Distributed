@@ -21,17 +21,20 @@ public class Manager implements Runnable{
         //todo start mngr to testsqs
         AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager is up");// todo delete
 
+        AwsHelper.OpenSQS("SQSresult");
+        AwsHelper.OpenSQS("SQSreview");
+
         Manager responseThread = new Manager();
         Thread thread = new Thread(responseThread);
         thread.start();
 
-        AwsHelper.OpenSQS("SQSresult");
-        AwsHelper.OpenSQS("SQSreview");
+
 
         while(true) {
             List<Message> msgs = AwsHelper.popSQS(AwsHelper.sqsLocalsToManager); // check if SQS Queue has new msgs for me
 
             for (Message m : msgs) {
+
                 String Body = m.body();
                 int start = Body.indexOf('[')+1;
                 int end = Body.indexOf(']');
@@ -42,14 +45,16 @@ public class Manager implements Runnable{
                 String jobOwner = arguments[1];
                 String outputFileName = arguments[2];
                 n = Integer.parseInt(arguments[3]);
-                terminated = Integer.parseInt(arguments[4]); //if local has multiple jobs he needs to send 1 only in the last job !
-                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\nmanager msg from sqsLocalsToManager arguments:\n" +Arrays.toString(arguments));// todo delete
 
                  // if terminated dont add new Files, but still finish what he got so far
                     Job job = downloadAndParse(address, jobOwner, outputFileName);// jobs contains his JobID
-                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\nmanager downloadAndParse:\n" +job.title);// todo delete
+                //this job might already been processed. same message can be retrieved twice from the sqs
+
+                //check if job already exists
+                if (checkIfJobExists(job)) continue;
 
                 jobs.put(nextJobID++, job); // adds the Job to the jobs Map
+                terminated = Integer.parseInt(arguments[4]); //if local has multiple jobs he needs to send 1 only in the last job !
 
                 // getting the estimated amount of currentReviews----------------
                 // String attr = "ApproximateNumberOfMessages";// todo fix
@@ -57,15 +62,18 @@ public class Manager implements Runnable{
                // int currentReviews = Integer.parseInt(attributes.get(attr));
                 int currentReviews = 0;
                 //---------------------------------------------------------------
-                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\nCreating Workers, RevewSize =" + job.reviews.size() + "\n" +
-                        "Current Reviews = "+ currentReviews);// todo delete
+
 
                 numOfCurrWorkers = createNewWorkers(job.reviews.size()+currentReviews); // if needed adds new worker instances, checks with SQS size
                 pushJobToSQSreview(job);
+
                 if (terminated != 1) {
                     break;
                 }
+
             }
+            //now all the messages are handled and can me deleted
+            AwsHelper.deletefromSQS(AwsHelper.sqsLocalsToManager,msgs);
         }
     }
     // push reviews to SQSreview from a Job
@@ -79,7 +87,6 @@ public class Manager implements Runnable{
 
 
     private static int createNewWorkers(int numOfReviews) {
-        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n createNewWorkers. numOfReviews:"+numOfReviews); // todo delete
 
         int neededWorkers = (int)Math.ceil((float)numOfReviews/n);
         AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n createNewWorkers. neededWorkers:"+neededWorkers); // todo delete
@@ -87,9 +94,7 @@ public class Manager implements Runnable{
         int newWorkers = 0;
         if (neededWorkers>numOfCurrWorkers) {
             newWorkers=neededWorkers-numOfCurrWorkers;
-            AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n createNewWorkers. in the if. newWorkers:"+newWorkers); // todo delete
             for (int w=0;w<newWorkers;w++){
-                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n createNewWorkers. in the for:" +w); // todo delete
 
                 AwsHelper.startInstance("Worker","Worker.jar");
             }
@@ -97,8 +102,17 @@ public class Manager implements Runnable{
         return newWorkers+numOfCurrWorkers;
     }
 
+    //check if job already exists
+    private static boolean checkIfJobExists(Job job){
+        for(Job j : jobs.values())
+            if (j.isequal(job))
+                return true;
+
+        return false;
+    }
+
+
     private static Job downloadAndParse(String address,String jobOwner, String outputFileName) {
-        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n downloadAndParse: "+ address); // todo delete
 
         //------------------download-------------------------------
         try{
@@ -109,7 +123,6 @@ public class Manager implements Runnable{
         List<Review> reviewList = new LinkedList<>();
         String jobName = "";
         Gson gson = new Gson();
-        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n Start Parsing: "+ address); // todo delete
 
         try (Reader reader = new FileReader("./"+address)) {
             BufferedReader Buffer = new BufferedReader(reader);
@@ -134,27 +147,32 @@ public class Manager implements Runnable{
             e.printStackTrace();
         }
         Job j = new Job(jobOwner,  nextJobID++, jobName,  reviewList,  outputFileName);
-        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n Adding Job: "+ j.title); // todo delete
         return j;
     }
 
     @Override
     public void run() {
-        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager's thread is up");// todo delete
 
         while (true) {
             List<Message> results = AwsHelper.popSQS("SQSresult");
 
+            if(results.size()>0)
+                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager's thread trying to pop results:"+ results.size());// todo delete
+
             List<Job> finishedJobs = saveResult(results); // if not duplicated, and if Reviews.length=Results.length returns jobID else return -1
 
             for (Job j:finishedJobs){
-                AwsHelper.pushSQS(AwsHelper.sqsLocalsToManager + j.jobOwner,j.outputFileName);
+
+                AwsHelper.pushSQS("sqsManagerToLocal-" + j.jobOwner,j.outputFileName);
                 jobs.remove(j.jobID);
             }
             if (jobs.isEmpty() && terminated == 1) {
+                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n terminating..:");// todo delete
+
                 AwsHelper.terminateInstancesByTag("Worker"); //numOfCurrWorkers
-               // createResponseMsg();// not sure what that means
+               // createResponseMsg();// TODO not sure what that means
                 AwsHelper.terminateInstancesByTag("Manager");
+
             }
 
         }
@@ -164,7 +182,9 @@ public class Manager implements Runnable{
     // check if the result is not duplicated, and if Reviews.length=Results.length returns jobID else return -1
     private List<Job> saveResult(List<Message> results) {
         List<Job> finishedJobs = new LinkedList<>();
-        for (Message m :results){
+        try{
+
+            for (Message m :results){
             Result r = AwsHelper.fromMSG(m,Result.class);
 
             //check fo duplication
@@ -185,11 +205,18 @@ public class Manager implements Runnable{
                 if (j.remainingResponses <= 0)// finihed with that job
                     finishedJobs.add(j);
             }
-            catch(Exception e) {}
+            catch(Exception e) {
+                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager's thread error1:"+ e);// todo delete
+
+            }
         }
 
         AwsHelper.deletefromSQS("SQSreview",results);
+        }
+        catch(Exception e) {
+            AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager's thread is dead save result error2:"+ e);// todo delete
 
+        }
         return finishedJobs;
     }
 }

@@ -134,6 +134,7 @@ public class LocalApplication {
     private static List<Message> CheckFinishedJobs() {
         List<Message> results = AwsHelper.popSQS(sqsManagerToLocal);
         if(results.size()>0)
+            System.out.println("YAY FINISHED JOB");
             jobsCounter-= results.size();
         return results;
     }

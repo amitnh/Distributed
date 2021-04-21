@@ -194,7 +194,7 @@ public class AwsHelper {
                     .userData(getDataScript(jarAddress))
                     .iamInstanceProfile(role)
                     .keyName("amital")
-                    .securityGroupIds("sg-5422235a")//sg-7e7c937d,
+                    .securityGroupIds("sg-7e7c937d")//sg-5422235a,
                     .build();
             RunInstancesResponse buildManagerResponse = ec2.runInstances(runRequest);
             String instanceId = buildManagerResponse.instances().get(0).instanceId();
@@ -256,13 +256,26 @@ public class AwsHelper {
 
     //cast message to T. for example, cast message to Review
     public static <T> T fromMSG(Message m,Class<T> c){
-        return gson.fromJson(m.body(), c);
+        String Body = m.body();
+        int start = Body.indexOf('{');
+        int end = Body.indexOf('}')+1;
+        Body = Body.substring(start,end);
+        Gson gson = new Gson();
+        T t = gson.fromJson(Body, c);
+        return t;
     }
 
     public static <T> List<T> fromMSG(List<Message> Messages,Class<T> c){
         List<T> tList = new LinkedList<>();
-        for(Message m: Messages)
-            tList.add(fromMSG(m, c));
+        for(Message m: Messages) {
+            String Body = m.body();
+            int start = Body.indexOf('{');
+            int end = Body.indexOf('}') + 1;
+            Body = Body.substring(start, end);
+            Gson gson = new Gson();
+            T t = gson.fromJson(Body, c);
+            tList.add(t);
+        }
         return tList;
     }
 

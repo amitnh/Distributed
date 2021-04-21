@@ -1,6 +1,6 @@
 import java.util.List;
 
-public class Job {
+public class Job{
 
     protected String jobOwner;
     protected int jobID;
@@ -21,5 +21,7 @@ public class Job {
     }
 
 
-
-}
+        public boolean isequal(Job otherJob) {
+            return (this.jobOwner.equals(otherJob.jobOwner))&&(this.outputFileName.equals(otherJob.outputFileName));
+        }
+    }

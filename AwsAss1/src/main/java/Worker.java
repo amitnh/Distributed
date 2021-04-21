@@ -2,6 +2,7 @@
 import java.util.*;
 import java.util.List;import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import com.google.gson.Gson;
 
 //todo add:
 //import edu.stanford.nlp.ling.CoreAnnotations;import edu.stanford.nlp.ling.CoreAnnotations.NamedEntityTagAnnotation;import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;import edu.stanford.nlp.ling.CoreAnnotations.TextAnnotation;import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;import edu.stanford.nlp.ling.CoreLabel;import edu.stanford.nlp.pipeline.Annotation;import edu.stanford.nlp.pipeline.StanfordCoreNLP;import edu.stanford.nlp.rnn.RNNCoreAnnotations;import edu.stanford.nlp.sentiment.SentimentCoreAnnotations;import edu.stanford.nlp.trees.Tree;import edu.stanford.nlp.util.CoreMap;
@@ -16,8 +17,7 @@ public class Worker {
     //static namedEntityRecognitionHandler namedEntityRecognitionHandler  = new namedEntityRecognitionHandler();todo add
 
     public static void main(String[] args) {
-        System.out.println("Worker Main");
-        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\nWorker is up");// todo delete
+
 
         while(true){
             //worker pulls a review from reviews_SQS added by the manager, performs necessary algorithms, and returns the result to the manager via results_SQS
@@ -35,9 +35,15 @@ public class Worker {
     private static List<Message> ProccesReview(List<Message>  reviews) {
         List<Message> results = new LinkedList<>();
         for(Message m:reviews) {
-            AwsHelper.pushSQS(AwsHelper.sqsTesting,"\nWorker ProccesReview:\n" + m.body());// todo delete
 
-            Review review = AwsHelper.fromMSG(m, Review.class);
+            String Body = m.body();
+            int start = Body.indexOf('{');
+            int end = Body.indexOf('}')+1;
+            Body = Body.substring(start,end);
+            Gson gson = new Gson();
+            Review review = gson.fromJson(Body, Review.class);
+
+
             Result result = new Result(review.getJobID(),review.getIndex());
             String reviewStr = review.getText();
             //result.setSentimentAnalysis(sentimentAnalysisHandler.findSentiment(reviewStr));todo add
@@ -45,6 +51,7 @@ public class Worker {
             result.setSentimentAnalysis(5);
             result.setNamedEntityRecognition(new String[]{"banana test entities","2","3"});
             results.add(AwsHelper.toMSG(result));
+
         }
         return results;
     }
