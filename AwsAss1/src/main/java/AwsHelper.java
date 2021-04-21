@@ -28,7 +28,7 @@ public class AwsHelper {
     public static int protection=0; //todo remove later
     public static int maxNumOfInstances=5; //todo remove later
 
-    public static String bucket_name = "bucket-amitandtal1";
+    public static String bucket_name = "bucket-amitandtal2";
     public static int NumOfRetriveMSGs = 1;
     public static String sqsTesting = "sqsTesting";
     public static String sqsLocalsToManager = "sqsLocalsToManager";
