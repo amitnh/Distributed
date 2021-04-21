@@ -17,7 +17,7 @@ public class Worker {
 
     public static void main(String[] args) {
         System.out.println("Worker Main");
-        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n Worker is up");// todo delete
+        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\nWorker is up");// todo delete
 
         while(true){
             //worker pulls a review from reviews_SQS added by the manager, performs necessary algorithms, and returns the result to the manager via results_SQS
@@ -35,6 +35,8 @@ public class Worker {
     private static List<Message> ProccesReview(List<Message>  reviews) {
         List<Message> results = new LinkedList<>();
         for(Message m:reviews) {
+            AwsHelper.pushSQS(AwsHelper.sqsTesting,"\nWorker ProccesReview:\n" + m.body());// todo delete
+
             Review review = AwsHelper.fromMSG(m, Review.class);
             Result result = new Result(review.getJobID(),review.getIndex());
             String reviewStr = review.getText();

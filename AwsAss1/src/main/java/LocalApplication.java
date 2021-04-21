@@ -39,7 +39,7 @@ public class LocalApplication {
     //args[] = [inputfilename1, ..., inputfilenameN, outputfilename1,..., outputfilenameN, n, terminate]
     public static void main(String[] args) {
         System.out.println("Local Main");
-        //AwsHelper.OpenSQS(sqsTesting);      //TODO remove, this SQS is for ALL locals to upload jobs for the manager
+        AwsHelper.OpenSQS(sqsTesting);      //TODO remove, this SQS is for ALL locals to upload jobs for the manager
 
         int numOfFiles = (args.length-2)/2;
         jobsCounter=numOfFiles;

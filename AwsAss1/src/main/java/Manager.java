@@ -25,6 +25,9 @@ public class Manager implements Runnable{
         Thread thread = new Thread(responseThread);
         thread.start();
 
+        AwsHelper.OpenSQS("SQSresult");
+        AwsHelper.OpenSQS("SQSreview");
+
         while(true) {
             List<Message> msgs = AwsHelper.popSQS(AwsHelper.sqsLocalsToManager); // check if SQS Queue has new msgs for me
 

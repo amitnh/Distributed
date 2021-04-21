@@ -194,7 +194,7 @@ public class AwsHelper {
                     .userData(getDataScript(jarAddress))
                     .iamInstanceProfile(role)
                     .keyName("amital")
-                    .securityGroupIds("sg-7e7c937d")//,sg-5422235a
+                    .securityGroupIds("sg-5422235a")//sg-7e7c937d,
                     .build();
             RunInstancesResponse buildManagerResponse = ec2.runInstances(runRequest);
             String instanceId = buildManagerResponse.instances().get(0).instanceId();
