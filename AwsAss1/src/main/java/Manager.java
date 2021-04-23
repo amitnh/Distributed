@@ -7,7 +7,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import software.amazon.awssdk.services.sqs.model.Message;
 
-public class Manager implements Runnable{
+public class Manager{
     public static  Map<Integer, Job> jobs = new HashMap<>();
     public static int numOfCurrWorkers=0;
     public static int terminated = 0;
@@ -15,20 +15,19 @@ public class Manager implements Runnable{
     public static int nextJobID = 0;
     public static int nextReviewIndex = 0;
     public static int n=0;
-    public static String s3name = "bucket-amitandtal2";
+    public static String s3name = "bucket-amitandtal";
 
     public static void main(String[] args) {
         System.out.println("Manager Main");
         //todo start mngr to testsqs
         AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n manager is up");// todo delete
 
-        AwsHelper.OpenSQS("SQSresult");
-        AwsHelper.OpenSQS("SQSreview");
-
-        Manager responseThread = new Manager();
+        ManagerThread responseThread = new ManagerThread();
         Thread thread = new Thread(responseThread);
         thread.start();
 
+        AwsHelper.OpenSQS("SQSresult");
+        AwsHelper.OpenSQS("SQSreview");
 
         while (true) {
             List<Message> msgs = AwsHelper.popSQS(AwsHelper.sqsLocalsToManager); // check if SQS Queue has new msgs for me
@@ -152,33 +151,24 @@ public class Manager implements Runnable{
         Job j = new Job(jobOwner,  nextJobID++, jobName,  reviewList,  outputFileName);
         return j;
     }
+    static class ManagerThread implements Runnable {
+        @Override
+        public void run() {
+            AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n manager's thread is up");// todo delete
 
-    @Override
-    public void run() {
-        AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n manager thread is up");// todo delete
-
-        while (true) {
-            List<Message> results = AwsHelper.popSQS("SQSresult");
-
-            if(results.size()>0) {
-                AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n manager's thread trying to pop results:" + results.size());// todo delete
-
+            while (true) {
+                List<Message> results = AwsHelper.popSQS("SQSresult");
                 List<Job> finishedJobs = saveResult(results); // if not duplicated, and if Reviews.length=Results.length returns jobID else return -1
 
                 for (Job j : finishedJobs) {
-
-                    AwsHelper.pushSQS("sqsManagerToLocal-" + j.jobOwner, j.outputFileName);
+                    AwsHelper.pushSQS(AwsHelper.sqsLocalsToManager + j.jobOwner, j.outputFileName);
                     jobs.remove(j.jobID);
                 }
-
-            }
-            if (jobs.isEmpty() && terminated == 1) {
-                AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n terminating..:");// todo delete
-
-                AwsHelper.terminateInstancesByTag("Worker"); //numOfCurrWorkers
-                // createResponseMsg();// TODO not sure what that means
-                AwsHelper.terminateInstancesByTag("Manager");
-                break;
+                if (jobs.isEmpty() && terminated == 1) {
+                    AwsHelper.terminateInstancesByTag("Worker"); //numOfCurrWorkers
+                    // createResponseMsg();// not sure what that means
+                    AwsHelper.terminateInstancesByTag("Manager");
+                }
 
             }
         }
@@ -186,7 +176,7 @@ public class Manager implements Runnable{
 
 
     // check if the result is not duplicated, and if Reviews.length=Results.length returns jobID else return -1
-    private List<Job> saveResult(List<Message> results) {
+    private static List<Job> saveResult(List<Message> results) {
         List<Job> finishedJobs = new LinkedList<>();
         try{
 
@@ -208,8 +198,10 @@ public class Manager implements Runnable{
             try {// maybe job already finished
                 Job j = jobs.get(r.jobID);
                 j.remainingResponses--;
-                if (j.remainingResponses <= 0)// finihed with that job
+                if (j.remainingResponses <= 0) {// finihed with that job
                     finishedJobs.add(j);
+                    jobs.remove(j);
+                }
             }
             catch(Exception e) {
                 AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager's thread error1:"+ e);// todo delete
