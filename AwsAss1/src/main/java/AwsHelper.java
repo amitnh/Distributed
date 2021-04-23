@@ -28,7 +28,7 @@ public class AwsHelper {
     public static int protection=0; //todo remove later
     public static int maxNumOfInstances=5; //todo remove later
 
-    public static String bucket_name = "bucket-amitandtal2";
+    public static String bucket_name = "bucket-amitandtal3";
     public static int NumOfRetriveMSGs = 1;
     public static String sqsTesting = "sqsTesting";
     public static String sqsLocalsToManager = "sqsLocalsToManager";
@@ -194,7 +194,7 @@ public class AwsHelper {
                     .userData(getDataScript(jarAddress))
                     .iamInstanceProfile(role)
                     .keyName("amital")
-                    .securityGroupIds("sg-7e7c937d")//sg-5422235a,
+                    .securityGroupIds("sg-5422235a")//sg-7e7c937d  -tal
                     .build();
             RunInstancesResponse buildManagerResponse = ec2.runInstances(runRequest);
             String instanceId = buildManagerResponse.instances().get(0).instanceId();
@@ -228,7 +228,7 @@ public class AwsHelper {
         for (Reservation reservation : managerResponse.reservations())
             for (Instance instance : reservation.instances())
                 for (Tag tag : instance.tags())
-                    if (tag.value().startsWith("Manager")) // todo check
+                    if (tag.value().startsWith("Manager") && (instance.state().code() == 16 || instance.state().code() == 0)) //16 == running 0 == pending
                         return true;
         return false;
     }
@@ -258,7 +258,7 @@ public class AwsHelper {
     public static <T> T fromMSG(Message m,Class<T> c){
         String Body = m.body();
         int start = Body.indexOf('{');
-        int end = Body.indexOf('}')+1;
+        int end = Body.lastIndexOf('}')+1;
         Body = Body.substring(start,end);
         Gson gson = new Gson();
         T t = gson.fromJson(Body, c);
@@ -270,7 +270,7 @@ public class AwsHelper {
         for(Message m: Messages) {
             String Body = m.body();
             int start = Body.indexOf('{');
-            int end = Body.indexOf('}') + 1;
+            int end = Body.lastIndexOf('}') + 1;
             Body = Body.substring(start, end);
             Gson gson = new Gson();
             T t = gson.fromJson(Body, c);

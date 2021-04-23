@@ -1,6 +1,8 @@
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.google.gson.Gson;
 
 import org.json.JSONArray;
@@ -8,26 +10,27 @@ import org.json.JSONObject;
 import software.amazon.awssdk.services.sqs.model.Message;
 
 public class Manager{
-    public static  Map<Integer, Job> jobs = new HashMap<>();
+    public static  Map<Integer, Job> jobs = new ConcurrentHashMap<>();
     public static int numOfCurrWorkers=0;
     public static int terminated = 0;
-    public static boolean toTerminate = false;
-    public static int nextJobID = 0;
+    public static Integer nextJobID = 0;
     public static int nextReviewIndex = 0;
     public static int n=0;
-    public static String s3name = "bucket-amitandtal";
+    public static Gson gson = new Gson();
+
 
     public static void main(String[] args) {
         System.out.println("Manager Main");
         //todo start mngr to testsqs
         AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n manager is up");// todo delete
 
+        AwsHelper.OpenSQS("SQSresult");
+        AwsHelper.OpenSQS("SQSreview");
+
         ManagerThread responseThread = new ManagerThread();
         Thread thread = new Thread(responseThread);
         thread.start();
 
-        AwsHelper.OpenSQS("SQSresult");
-        AwsHelper.OpenSQS("SQSreview");
 
         while (true) {
             List<Message> msgs = AwsHelper.popSQS(AwsHelper.sqsLocalsToManager); // check if SQS Queue has new msgs for me
@@ -49,10 +52,14 @@ public class Manager{
                 Job job = downloadAndParse(address, jobOwner, outputFileName);// jobs contains his JobID
                 //this job might already been processed. same message can be retrieved twice from the sqs
 
+
+
                 //check if job already exists
                 if (checkIfJobExists(job)) continue;
 
                 jobs.put(nextJobID++, job); // adds the Job to the jobs Map
+                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n Manager. after jobs.put:"+ jobs.get(nextJobID-1).title); // todo delete
+
                 terminated = Integer.parseInt(arguments[4]); //if local has multiple jobs he needs to send 1 only in the last job !
 
                 //now another thread can check for finished jobs and results
@@ -91,7 +98,6 @@ public class Manager{
     private static int createNewWorkers(int numOfReviews) {
 
         int neededWorkers = (int)Math.ceil((float)numOfReviews/n);
-        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n createNewWorkers. neededWorkers:"+neededWorkers); // todo delete
 
         int newWorkers = 0;
         if (neededWorkers>numOfCurrWorkers) {
@@ -124,7 +130,6 @@ public class Manager{
         //---------------------parse--------------------------------
         List<Review> reviewList = new LinkedList<>();
         String jobName = "";
-        Gson gson = new Gson();
 
         try (Reader reader = new FileReader("./"+address)) {
             BufferedReader Buffer = new BufferedReader(reader);
@@ -158,6 +163,7 @@ public class Manager{
 
             while (true) {
                 List<Message> results = AwsHelper.popSQS("SQSresult");
+
                 List<Job> finishedJobs = saveResult(results); // if not duplicated, and if Reviews.length=Results.length returns jobID else return -1
 
                 for (Job j : finishedJobs) {
@@ -168,53 +174,80 @@ public class Manager{
                     AwsHelper.terminateInstancesByTag("Worker"); //numOfCurrWorkers
                     // createResponseMsg();// not sure what that means
                     AwsHelper.terminateInstancesByTag("Manager");
+                    break;
                 }
 
             }
         }
-    }
 
 
-    // check if the result is not duplicated, and if Reviews.length=Results.length returns jobID else return -1
-    private static List<Job> saveResult(List<Message> results) {
-        List<Job> finishedJobs = new LinkedList<>();
-        try{
+        // check if the result is not duplicated, and if Reviews.length=Results.length returns jobID else return -1
+        public static List<Job> saveResult(List<Message> results) {
+            List<Job> finishedJobs = new LinkedList<>();
+            try{
 
-            for (Message m :results){
-            Result r = AwsHelper.fromMSG(m,Result.class);
+                for (Message m :results){
+                    Result r = AwsHelper.fromMSG(m,Result.class);
+                    int Jobid = r.jobID;
+                    Job job = (Job) jobs.values().toArray()[Jobid];
 
-            //check fo duplication
-            String jobOutputName=jobs.get(r.jobID).outputFileName;
-            int index = r.Reviewindex;
-            String key = jobOutputName + "/" + index;
-            if (AwsHelper.doesFileExists(key)) continue;
+                    String jobOutputName = job.getOutputFileName();
 
-            //upload file to S3
-            File f = new File("/"+key);
-            AwsHelper.uploadToS3("/"+key,key);
-            f.delete();
+//                String jobOutputName=jobs.get(r.jobID).outputFileName;
 
-            //check for last review in job
-            try {// maybe job already finished
-                Job j = jobs.get(r.jobID);
-                j.remainingResponses--;
-                if (j.remainingResponses <= 0) {// finihed with that job
-                    finishedJobs.add(j);
-                    jobs.remove(j);
+                   // int index = r.Reviewindex;
+                    String key = jobOutputName + "/55";// + index;
+                    if (AwsHelper.doesFileExists(key)) continue;
+
+
+                    //-------------------------------
+                    //upload file to S3
+                    try {
+                        File f = new File(key);
+                        if (f.createNewFile()) {
+                            //success
+                            FileWriter myWriter = new FileWriter(key);
+                            myWriter.write("banana");
+                            myWriter.close();
+                            AwsHelper.uploadToS3(key,key);
+                            AwsHelper.pushSQS(AwsHelper.sqsTesting, "saveResult: uploaded result file to S3: "+ key );// todo delete
+
+                        } else {
+                            //File already exists
+                            AwsHelper.pushSQS(AwsHelper.sqsTesting,"File already exists.");
+                        }
+                        f.delete();
+                    } catch (IOException e) {
+                        AwsHelper.pushSQS(AwsHelper.sqsTesting,"File error: " + e);
+                        e.printStackTrace();
+                    }
+                    //-------------------------------
+
+                    //check for last review in job
+                    try {// maybe job already finished
+                        Job j = (Job) jobs.values().toArray()[r.jobID];
+
+                        j.remainingResponses--;
+                        if (j.remainingResponses <= 0) {// finihed with that job
+                            finishedJobs.add(j);
+                            AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n@@@@@@@@@@@@\nsaveResult: job finished");// todo delete
+
+                        }
+                    }
+                    catch(Exception e) {
+                        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager's thread error1:"+ e);// todo delete
+
+                    }
                 }
+
+                AwsHelper.deletefromSQS("SQSresult",results);
             }
             catch(Exception e) {
-                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager's thread error1:"+ e);// todo delete
+                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager's thread is dead save result error2:"+ e);// todo delete
 
             }
+            return finishedJobs;
         }
-
-        AwsHelper.deletefromSQS("SQSreview",results);
-        }
-        catch(Exception e) {
-            AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager's thread is dead save result error2:"+ e);// todo delete
-
-        }
-        return finishedJobs;
     }
+
 }

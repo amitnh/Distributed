@@ -38,7 +38,7 @@ public class Worker {
 
             String Body = m.body();
             int start = Body.indexOf('{');
-            int end = Body.indexOf('}')+1;
+            int end = Body.lastIndexOf('}')+1;
             Body = Body.substring(start,end);
             Gson gson = new Gson();
             Review review = gson.fromJson(Body, Review.class);

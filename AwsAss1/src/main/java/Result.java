@@ -1,9 +1,9 @@
 public class Result {
 
-    protected int jobID;
-    protected int Reviewindex;// review index in the job
-    protected int sentiment;
-    protected String[] entities; // PERSON, LOCATION, ORGANIZATION
+    public int jobID;
+    public int Reviewindex;// review index in the job
+    public int sentiment;
+    public String[] entities; // PERSON, LOCATION, ORGANIZATION
 
     public Result(int jobID, int reviewindex) {
         this.jobID = jobID;

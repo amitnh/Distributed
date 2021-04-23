@@ -1,17 +1,17 @@
 public class Review {
 
-    protected int jobID;
-    protected int index;
-    protected String id;
-    protected String link;
-    protected String title;
-    protected String text;
-    protected String rating;
-    protected String author;
-    protected String date;
+    public int jobID;
+    public int index;
+    public String id;
+    public String link;
+    public String title;
+    public String text;
+    public String rating;
+    public String author;
+    public String date;
 
 
-    protected String username;
+    public String username;
 
     public Review() {
         this.id = "";
