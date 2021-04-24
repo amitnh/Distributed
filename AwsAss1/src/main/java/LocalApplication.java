@@ -1,3 +1,4 @@
+import java.awt.*;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.LinkedList;
@@ -100,11 +101,19 @@ public class LocalApplication {
 
     private static void finish() {
 
-        // check the SQS for massages of finished jobs. /TODO change from busy wait to somthing smarter..
+        // check the SQS for massages of finished jobs
         while(true){
             //Check SQS - sqsManagerToLocal for finished jobs(results)
-            List<Message> resultsMsgs = CheckFinishedJobs();
-            List<Result> results = AwsHelper.fromMSG(resultsMsgs,Result.class);
+            List<Message> finishedJobs = CheckFinishedJobs();
+            List<String> finishedJobsOutputNames = new LinkedList<>();
+            for (Message m: finishedJobs)
+                 finishedJobsOutputNames.add(m.body());
+
+            downloadResults(finishedJobsOutputNames); // download from s3 to one file on Local Machine
+            //filesToHTML(finishedJobsOutputNames); // change files from txt to HTML todo
+
+
+
             //TODO only for testing, remove before flight
             List<Message> testlist = AwsHelper.popSQS(sqsTesting);
 
@@ -113,12 +122,11 @@ public class LocalApplication {
                 String testMSG = testlist.get(0).body();
                 System.out.println("testMSGs: " + testMSG);//.get(0)
             }
-            if (!results.isEmpty())
-                System.out.println("Results sentiment:"+results.get(0).sentiment + "\nentities: " + results.get(0).entities);
-
+           /// if (!finishedJobs.isEmpty())
+            //    System.out.println("Results sentiment:"+finishedJobs.get(0).sentiment + "\nentities: " + finishedJobs.get(0).entities);
 
             AwsHelper.deletefromSQS("sqsTesting",testlist);
-            AwsHelper.deletefromSQS(sqsManagerToLocal,resultsMsgs);
+            AwsHelper.deletefromSQS(sqsManagerToLocal,finishedJobs);
 
             if(jobsCounter==0)
                 break;
@@ -129,6 +137,26 @@ public class LocalApplication {
         }
         //TODO makeHtmlFile(Result);
 
+    }
+
+    private static void downloadResults(List<String> finishedJobsOutputNames) {
+        for (String outputname: finishedJobsOutputNames){
+            //Creating the output directory
+            File file = new File("./"+outputname);
+            file.mkdir();
+
+            int i=0;
+            while(true) { // download all files and deletes them
+                try {
+                    AwsHelper.downloadFile(outputname + "-" + i, "./" + outputname + "/" + i );
+                    AwsHelper.deleteFile(outputname + "-" + i);
+                    i++;
+                }
+                catch (Exception ignored){
+                    break;
+                }
+            }
+        }
     }
 
     private static List<Message> CheckFinishedJobs() {

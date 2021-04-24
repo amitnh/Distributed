@@ -167,7 +167,7 @@ public class Manager{
                 List<Job> finishedJobs = saveResult(results); // if not duplicated, and if Reviews.length=Results.length returns jobID else return -1
 
                 for (Job j : finishedJobs) {
-                    AwsHelper.pushSQS(AwsHelper.sqsLocalsToManager + j.jobOwner, j.outputFileName);
+                    AwsHelper.pushSQS("sqsManagerToLocal-" + j.jobOwner, j.outputFileName);
                     jobs.remove(j.jobID);
                 }
                 if (jobs.isEmpty() && terminated == 1) {
@@ -195,8 +195,8 @@ public class Manager{
 
 //                String jobOutputName=jobs.get(r.jobID).outputFileName;
 
-                   // int index = r.Reviewindex;
-                    String key = jobOutputName + "/55";// + index;
+                    int index = r.Reviewindex;
+                    String key = jobOutputName + "-" + index;
                     if (AwsHelper.doesFileExists(key)) continue;
 
 
@@ -207,11 +207,9 @@ public class Manager{
                         if (f.createNewFile()) {
                             //success
                             FileWriter myWriter = new FileWriter(key);
-                            myWriter.write("banana");
+                            myWriter.write(gson.toJson(r));
                             myWriter.close();
                             AwsHelper.uploadToS3(key,key);
-                            AwsHelper.pushSQS(AwsHelper.sqsTesting, "saveResult: uploaded result file to S3: "+ key );// todo delete
-
                         } else {
                             //File already exists
                             AwsHelper.pushSQS(AwsHelper.sqsTesting,"File already exists.");

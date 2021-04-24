@@ -28,7 +28,7 @@ public class AwsHelper {
     public static int protection=0; //todo remove later
     public static int maxNumOfInstances=5; //todo remove later
 
-    public static String bucket_name = "bucket-amitandtal3";
+    public static String bucket_name = "bucket-amitandtal4";
     public static int NumOfRetriveMSGs = 1;
     public static String sqsTesting = "sqsTesting";
     public static String sqsLocalsToManager = "sqsLocalsToManager";
@@ -52,6 +52,14 @@ public class AwsHelper {
                                 .build())
                 .build());
         System.out.println("Bucket created: " + bucket_name);
+    }
+
+    public static void deleteFile(String file) {
+        DeleteObjectRequest request = DeleteObjectRequest.builder()
+                .bucket(bucket_name)
+                .key(file)
+                .build();
+        s3Client.deleteObject(request);
     }
 
     //create an SQS named SQS_name
@@ -124,6 +132,8 @@ public class AwsHelper {
         return sqs.getQueueUrl(getQueueRequest).queueUrl();
     }
 
+
+
     public static void uploadToS3(String path, String key)  {
         s3Client.putObject(PutObjectRequest.builder()
                         .bucket(bucket_name)
@@ -132,6 +142,8 @@ public class AwsHelper {
                         .build(),
                 RequestBody.fromFile(new File(path)));
         System.out.println("File uploaded : " + key);
+
+
     }
     public static boolean doesFileExists(String key) {
         try {
@@ -167,6 +179,7 @@ public class AwsHelper {
 
     }
     public static void downloadFile(String key, String destination) {
+
         s3Client.getObject(GetObjectRequest.builder().bucket(bucket_name).key(key).build(),
                 ResponseTransformer.toFile(Paths.get(destination)));
         System.out.println("File downloaded: " + key);
@@ -188,13 +201,13 @@ public class AwsHelper {
                     .build();
             RunInstancesRequest runRequest = RunInstancesRequest.builder()
                     .imageId(amiId)
-                    .instanceType(InstanceType.T2_SMALL)
+                    .instanceType(InstanceType.T2_XLARGE)
                     .maxCount(1)
                     .minCount(1)
                     .userData(getDataScript(jarAddress))
                     .iamInstanceProfile(role)
-                    .keyName("amital")
-                    .securityGroupIds("sg-5422235a")//sg-7e7c937d  -tal
+                    .keyName("talamit")
+                    .securityGroupIds("sg-7e7c937d")//sg-5422235a amit
                     .build();
             RunInstancesResponse buildManagerResponse = ec2.runInstances(runRequest);
             String instanceId = buildManagerResponse.instances().get(0).instanceId();
