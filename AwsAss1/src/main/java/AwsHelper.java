@@ -182,7 +182,7 @@ public class AwsHelper {
 
         s3Client.getObject(GetObjectRequest.builder().bucket(bucket_name).key(key).build(),
                 ResponseTransformer.toFile(Paths.get(destination)));
-        System.out.println("File downloaded: " + key);
+        //System.out.println("File downloaded: " + key);
     }
 
     //=============================================================================
