@@ -10,7 +10,7 @@ import org.json.JSONObject;
 import software.amazon.awssdk.services.sqs.model.Message;
 
 public class Manager{
-    public static  Map<Integer, Job> jobs = new ConcurrentHashMap<>();
+    public static  Map<Integer, Job> jobs;
     public static int numOfCurrWorkers=0;
     public static int terminated = 0;
     public static Integer nextJobID = 0;
@@ -20,6 +20,7 @@ public class Manager{
 
 
     public static void main(String[] args) {
+        jobs = new ConcurrentHashMap<>();
         System.out.println("Manager Main");
         //todo start mngr to testsqs
         AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n manager is up");// todo delete
@@ -54,7 +55,10 @@ public class Manager{
 
 
                 //check if job already exists
-                if (checkIfJobExists(job)) continue;
+                if (checkIfJobExists(job)){
+                    AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n ?@!?#!?$RE?AS?SAFSDF"); // todo delete
+                    continue;
+                }
 
                 jobs.put(nextJobID++, job); // adds the Job to the jobs Map
 
@@ -171,7 +175,6 @@ public class Manager{
 
             while (true) {
                 List<Message> results = AwsHelper.popSQS("SQSresult");
-
                 List<Job> finishedJobs = saveResult(results); // if not duplicated, and if Reviews.length=Results.length returns jobID else return -1
 
                 for (Job j : finishedJobs) {
@@ -204,15 +207,22 @@ public class Manager{
                 for (Message m :results){
                     Result r = AwsHelper.fromMSG(m,Result.class);
                     int Jobid = r.jobID;
+                    try {
+                        AwsHelper.pushSQS(AwsHelper.sqsTesting," jobs Arrays: " + Arrays.toString(jobs.values().toArray()));//TODO delete
+                    }
+                    catch (Exception ignored){
+                    }
+
                     Job job = (Job) jobs.values().toArray()[Jobid];
 
                     String jobOutputName = job.getOutputFileName();
 
-//                String jobOutputName=jobs.get(r.jobID).outputFileName;
-
                     int index = r.Reviewindex;
                     String key = jobOutputName + "-" + index;
-                    if (AwsHelper.doesFileExists(key)) continue;
+                    if (AwsHelper.doesFileExists(key)) {
+                        AwsHelper.pushSQS(AwsHelper.sqsTesting,"File already exists. continue: key : " + key);//TODO delete
+                        continue;
+                    }
 
 
                     //-------------------------------
@@ -238,13 +248,12 @@ public class Manager{
 
                     //check for last review in job
                     try {// maybe job already finished
-                        Job j = (Job) jobs.values().toArray()[r.jobID];
-                        if(r.jobID!=j.jobID)
+                        if(r.jobID!=job.jobID)
                             AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n@@@@@@@@@@@@\nsaveResult: error!");// todo delete
 
-                        j.remainingResponses--;
-                        if (j.remainingResponses <= 0) {// finihed with that job
-                            finishedJobs.add(j);
+                        job.remainingResponses--;
+                        if (job.remainingResponses <= 0) {// finihed with that job
+                            finishedJobs.add(job);
                             AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n@@@@@@@@@@@@\nsaveResult: job finished");// todo delete
 
                         }
@@ -259,7 +268,6 @@ public class Manager{
             }
             catch(Exception e) {
                 AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager's thread is dead save result error2:"+ e);// todo delete
-
             }
             return finishedJobs;
         }

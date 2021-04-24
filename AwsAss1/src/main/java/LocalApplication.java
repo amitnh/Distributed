@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -74,9 +75,16 @@ public class LocalApplication {
             //pushing job to SQS as a URL for the uploaded file
             //arguments  -> [address, jobOwner, outputFileName,n,[terminating]]
                 terminated = Integer.parseInt(args[args.length - 1])*numOfFiles; // only in the last file
-
+//            String address = arguments[0];
+//            String jobOwner = arguments[1];
+//            String outputFileName = arguments[2];
+//            n = Integer.parseInt(arguments[3]);
 
             String[] arguments = {key, String.valueOf(myID), args[numOfFiles+i], args[args.length - 2],String.valueOf(terminated)};
+            System.out.println("");
+            for(String a : arguments)
+                System.out.print(a+',');
+
             List<Message> list = new LinkedList<>();
             list.add(AwsHelper.toMSG(arguments));
 
