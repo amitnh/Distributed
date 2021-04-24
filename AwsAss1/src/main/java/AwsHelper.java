@@ -110,7 +110,14 @@ public class AwsHelper {
         return sqs.receiveMessage(receiveRequest).messages();
     }
 
-
+    public static void deleteSQS(String SQS_name) {
+        String queueUrl = getSQSUrl(SQS_name);
+        DeleteQueueRequest deleteRequest = DeleteQueueRequest
+                .builder()
+                .queueUrl(queueUrl)
+                .build();
+        sqs.deleteQueue(deleteRequest);
+    }
 
     public static void deletefromSQS(String SQS_name,List<Message> msgs)  {
         String queueUrl = getSQSUrl(SQS_name);

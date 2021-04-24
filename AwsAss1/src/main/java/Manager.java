@@ -69,20 +69,20 @@ public class Manager{
                 // String attr = "ApproximateNumberOfMessages";// todo fix
                 // Map<String, String> attributes = AwsHelper.sqs.getQueueAttributes(new GetQueueAttributesRequest(AwsHelper.getSQSUrl("SQSreview")).withAttributeNames(attr)).getAttributes();
                 // int currentReviews = Integer.parseInt(attributes.get(attr));
-                int currentReviews = 0;
                 //---------------------------------------------------------------
-
-
-                numOfCurrWorkers = createNewWorkers(job.reviews.size() + currentReviews); // if needed adds new worker instances, checks with SQS size
+                int currentReviews = 0;
+                for (Job j: jobs.values()){ // calculates number of review tasks left
+                    currentReviews+= j.remainingResponses;
+                }
+                numOfCurrWorkers = createNewWorkers(currentReviews); // if needed adds new worker instances, checks with SQS size
                 pushJobToSQSreview(job);
 
-                if (terminated != 1) {
-                    break;
-                }
-
             }
-            //now all the messages are handled and can me deleted
+            //now all the messages are handled and can be deleted
             AwsHelper.deletefromSQS(AwsHelper.sqsLocalsToManager, msgs);
+            if (terminated == 1) {
+                break;
+            }
         }
     }
     // push reviews to SQSreview from a Job
@@ -98,7 +98,6 @@ public class Manager{
     private static int createNewWorkers(int numOfReviews) {
 
         int neededWorkers = (int)Math.ceil((float)numOfReviews/n);
-
         int newWorkers = 0;
         if (neededWorkers>numOfCurrWorkers) {
             newWorkers=neededWorkers-numOfCurrWorkers;
@@ -172,6 +171,12 @@ public class Manager{
                 }
                 if (jobs.isEmpty() && terminated == 1) {
                     AwsHelper.terminateInstancesByTag("Worker"); //numOfCurrWorkers
+                    // delete sqs's
+                    AwsHelper.deleteSQS(AwsHelper.sqsLocalsToManager);
+                    AwsHelper.deleteSQS("SQSresult");
+                    AwsHelper.deleteSQS("SQSreview");
+
+
                     // createResponseMsg();// not sure what that means
                     AwsHelper.terminateInstancesByTag("Manager");
                     break;

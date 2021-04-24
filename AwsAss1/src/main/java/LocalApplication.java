@@ -131,11 +131,9 @@ public class LocalApplication {
             if(jobsCounter==0)
                 break;
         }
-        System.out.println("finished");
-        if (terminated==1){
-            AwsHelper.deleteBucket();
-        }
+        AwsHelper.deleteSQS(sqsManagerToLocal); // delete my sqs
         //TODO makeHtmlFile(Result);
+        System.out.println("finished");
 
     }
 
