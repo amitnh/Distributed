@@ -16,6 +16,7 @@ public class Manager{
     public static Integer nextJobID = 0;
     public static int nextReviewIndex = 0;
     public static int n=0;
+    public static int OngoingJobs=0;
     public static Gson gson = new Gson();
 
 
@@ -60,8 +61,8 @@ public class Manager{
                     continue;
                 }
 
-                jobs.put(nextJobID++, job); // adds the Job to the jobs Map
-
+                jobs.put(nextJobID, job); // adds the Job to the jobs Map
+                OngoingJobs++;
                 if(Integer.parseInt(arguments[4])!=0) {
                     if (terminated==0)
                         terminated=Integer.parseInt(arguments[4]);
@@ -101,7 +102,7 @@ public class Manager{
         for (Review r:job.reviews){
             list.add(AwsHelper.toMSG(r));
         }
-        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n pushing list of reviews to sqs, size of list:" +list.size()); // todo delete
+        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n pushing new job: jobID-" +job.jobID+ " jobOwner="+ job.jobOwner+ " outputFileName="+job.outputFileName); // todo delete
         AwsHelper.pushSQS("SQSreview",list);
     }
 
@@ -157,6 +158,7 @@ public class Manager{
                     JSONObject explrObject = jsonArray.getJSONObject(i);
                     Review review = gson.fromJson(String.valueOf(explrObject), Review.class);
                     review.setIndex(nextReviewIndex++);
+                    review.setJobID(nextJobID);
                     reviewList.add(review);
 
                 }
@@ -179,9 +181,9 @@ public class Manager{
 
                 for (Job j : finishedJobs) {
                     AwsHelper.pushSQS("sqsManagerToLocal-" + j.jobOwner, j.outputFileName);
-//                    jobs.remove(j.jobID);
+                    OngoingJobs--;
                 }
-                if (jobs.isEmpty() && terminated == 1) {
+                if (OngoingJobs==0 && terminated == 1) {
                     AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n manager's thread terminating");// todo delete
                     AwsHelper.terminateInstancesByTag("Worker"); //numOfCurrWorkers
                     // delete sqs's
@@ -207,13 +209,8 @@ public class Manager{
                 for (Message m :results){
                     Result r = AwsHelper.fromMSG(m,Result.class);
                     int Jobid = r.jobID;
-                    try {
-                        AwsHelper.pushSQS(AwsHelper.sqsTesting," jobs Arrays: " + Arrays.toString(jobs.values().toArray()));//TODO delete
-                    }
-                    catch (Exception ignored){
-                    }
+                    Job job = getJob(Jobid);
 
-                    Job job = (Job) jobs.values().toArray()[Jobid];
 
                     String jobOutputName = job.getOutputFileName();
 
@@ -271,6 +268,14 @@ public class Manager{
             }
             return finishedJobs;
         }
-    }
 
+
+    }
+    public static Job getJob(int jobID){
+        for(Job j: jobs.values()){
+            if(j.jobID==jobID)
+                return j;
+        }
+        return  null;
+    }
 }
