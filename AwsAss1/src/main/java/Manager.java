@@ -36,7 +36,6 @@ public class Manager{
             List<Message> msgs = AwsHelper.popSQS(AwsHelper.sqsLocalsToManager); // check if SQS Queue has new msgs for me
 
             for (Message m : msgs) {
-
                 String Body = m.body();
                 int start = Body.indexOf('[') + 1;
                 int end = Body.indexOf(']');
@@ -58,39 +57,47 @@ public class Manager{
                 if (checkIfJobExists(job)) continue;
 
                 jobs.put(nextJobID++, job); // adds the Job to the jobs Map
-                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n Manager. after jobs.put:"+ jobs.get(nextJobID-1).title); // todo delete
 
-                terminated = Integer.parseInt(arguments[4]); //if local has multiple jobs he needs to send 1 only in the last job !
-
+                if(Integer.parseInt(arguments[4])!=0) {
+                    if (terminated==0)
+                        terminated=Integer.parseInt(arguments[4]);
+                    else
+                        terminated--;
+                    AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n Manager. terminated: "+ terminated); // todo delete
+                }
                 //now another thread can check for finished jobs and results
 
 
-                // getting the estimated amount of currentReviews----------------
-                // String attr = "ApproximateNumberOfMessages";// todo fix
-                // Map<String, String> attributes = AwsHelper.sqs.getQueueAttributes(new GetQueueAttributesRequest(AwsHelper.getSQSUrl("SQSreview")).withAttributeNames(attr)).getAttributes();
-                // int currentReviews = Integer.parseInt(attributes.get(attr));
+
                 //---------------------------------------------------------------
                 int currentReviews = 0;
                 for (Job j: jobs.values()){ // calculates number of review tasks left
                     currentReviews+= j.remainingResponses;
                 }
                 numOfCurrWorkers = createNewWorkers(currentReviews); // if needed adds new worker instances, checks with SQS size
+                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n pushJobToSQSreview - job review size "+ job.reviews.size() +"job name: " +job.title); // todo delete
                 pushJobToSQSreview(job);
 
             }
             //now all the messages are handled and can be deleted
+
             AwsHelper.deletefromSQS(AwsHelper.sqsLocalsToManager, msgs);
-            if (terminated == 1) {
-                break;
-            }
+
+//            if (terminated == 1) {
+//                break;
+//            }
         }
+
+
     }
     // push reviews to SQSreview from a Job
     private static void pushJobToSQSreview(Job job) {
         List<Message> list = new LinkedList<>();
+
         for (Review r:job.reviews){
             list.add(AwsHelper.toMSG(r));
         }
+        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n pushing list of reviews to sqs, size of list:" +list.size()); // todo delete
         AwsHelper.pushSQS("SQSreview",list);
     }
 
@@ -125,15 +132,19 @@ public class Manager{
         try{
             AwsHelper.downloadFile(address,"./"+address);
         }
-        catch (Exception ignored){}
+        catch (Exception e){
+        }
+
         //---------------------parse--------------------------------
         List<Review> reviewList = new LinkedList<>();
         String jobName = "";
 
         try (Reader reader = new FileReader("./"+address)) {
+
             BufferedReader Buffer = new BufferedReader(reader);
             String Line = Buffer.readLine();
             jobName = (new JSONObject(Line)).get("title").toString();
+            nextReviewIndex =0;
 
             while( Line  != null){
                 JSONObject jsnobject = new JSONObject(Line);
@@ -149,11 +160,9 @@ public class Manager{
             }
             File f = new File("./"+address);// deletes the file from local Instance
             f.delete();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ignored) {
         }
-        Job j = new Job(jobOwner,  nextJobID++, jobName,  reviewList,  outputFileName);
-        return j;
+        return new Job(jobOwner,  nextJobID++, jobName,  reviewList,  outputFileName);
     }
     static class ManagerThread implements Runnable {
         @Override
@@ -167,9 +176,10 @@ public class Manager{
 
                 for (Job j : finishedJobs) {
                     AwsHelper.pushSQS("sqsManagerToLocal-" + j.jobOwner, j.outputFileName);
-                    jobs.remove(j.jobID);
+//                    jobs.remove(j.jobID);
                 }
                 if (jobs.isEmpty() && terminated == 1) {
+                    AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n manager's thread terminating");// todo delete
                     AwsHelper.terminateInstancesByTag("Worker"); //numOfCurrWorkers
                     // delete sqs's
                     AwsHelper.deleteSQS(AwsHelper.sqsLocalsToManager);
@@ -217,11 +227,11 @@ public class Manager{
                             AwsHelper.uploadToS3(key,key);
                         } else {
                             //File already exists
-                            AwsHelper.pushSQS(AwsHelper.sqsTesting,"File already exists.");
+                            AwsHelper.pushSQS(AwsHelper.sqsTesting,"File already exists.");//TODO delete
                         }
                         f.delete();
                     } catch (IOException e) {
-                        AwsHelper.pushSQS(AwsHelper.sqsTesting,"File error: " + e);
+                        AwsHelper.pushSQS(AwsHelper.sqsTesting,"File error: " + e);//TODO delete
                         e.printStackTrace();
                     }
                     //-------------------------------
@@ -229,6 +239,8 @@ public class Manager{
                     //check for last review in job
                     try {// maybe job already finished
                         Job j = (Job) jobs.values().toArray()[r.jobID];
+                        if(r.jobID!=j.jobID)
+                            AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n@@@@@@@@@@@@\nsaveResult: error!");// todo delete
 
                         j.remainingResponses--;
                         if (j.remainingResponses <= 0) {// finihed with that job

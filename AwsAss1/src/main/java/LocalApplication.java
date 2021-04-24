@@ -73,10 +73,8 @@ public class LocalApplication {
 
             //pushing job to SQS as a URL for the uploaded file
             //arguments  -> [address, jobOwner, outputFileName,n,[terminating]]
-            if (numOfFiles-1 == i)
-                terminated = Integer.parseInt(args[args.length - 1]); // only in the last file
-            else
-                terminated=0;
+                terminated = Integer.parseInt(args[args.length - 1])*numOfFiles; // only in the last file
+
 
             String[] arguments = {key, String.valueOf(myID), args[numOfFiles+i], args[args.length - 2],String.valueOf(terminated)};
             List<Message> list = new LinkedList<>();
