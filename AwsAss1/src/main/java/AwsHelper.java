@@ -237,7 +237,7 @@ public class AwsHelper {
         String str = "";
         str+="#! /bin/bash\n";
         str+="wget https://" +bucket_name +".s3.amazonaws.com/"+ file + "\n";// todo change the s3address
-        str+="java -jar -Xmx550m " + file + "\n";
+        str+="java -jar " + file + "\n";
         return Base64.getEncoder().encodeToString(str.getBytes());
 
     }
@@ -248,7 +248,7 @@ public class AwsHelper {
         for (Reservation reservation : managerResponse.reservations())
             for (Instance instance : reservation.instances())
                 for (Tag tag : instance.tags())
-                    if (tag.value().startsWith("Manager") && (instance.state().code() == 16 || instance.state().code() == 0)) //16 == running 0 == pending
+                    if (tag.value().startsWith("Manager") && instance.state().name() == InstanceStateName.RUNNING)
                         return true;
         return false;
     }
