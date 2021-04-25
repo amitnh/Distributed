@@ -12,6 +12,7 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
 
 import java.io.File;
+import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -185,8 +186,8 @@ public class AwsHelper {
 
 
     }
-    public static void downloadFile(String key, String destination) {
 
+        public static void downloadFile(String key, String destination) {
         s3Client.getObject(GetObjectRequest.builder().bucket(bucket_name).key(key).build(),
                 ResponseTransformer.toFile(Paths.get(destination)));
         //System.out.println("File downloaded: " + key);

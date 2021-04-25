@@ -1,10 +1,13 @@
 import java.awt.*;
-import java.io.File;
+import java.io.*;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -39,7 +42,7 @@ public class LocalApplication {
     private static String sqsTesting = "sqsTesting";
 
     //args[] = [inputfilename1, ..., inputfilenameN, outputfilename1,..., outputfilenameN, n, terminate]
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         System.out.println("Local Main");
         AwsHelper.OpenSQS(sqsTesting);      //TODO remove, this SQS is for ALL locals to upload jobs for the manager
 
@@ -105,7 +108,7 @@ public class LocalApplication {
     }
 
 
-    private static void finish() {
+    private static void finish() throws IOException {
 
         // check the SQS for massages of finished jobs
         while(true){
@@ -143,7 +146,7 @@ public class LocalApplication {
 
     }
 
-    private static void downloadResults(List<String> finishedJobsOutputNames) {
+    private static void downloadResults(List<String> finishedJobsOutputNames) throws IOException {
         for (String outputname: finishedJobsOutputNames){
             //Creating the output directory
             File file = new File("./"+outputname);
@@ -160,6 +163,7 @@ public class LocalApplication {
                     break;
                 }
             }
+            MergeTextFiles(outputname);
         }
     }
 
@@ -171,5 +175,95 @@ public class LocalApplication {
         return results;
     }
 
+    public static void MergeTextFiles(String outputname) throws IOException {
+        File f = new File("./target/LocalApplication/"+outputname+"/");
+
+        File merged = new File("./target/LocalApplication/"+outputname+".html");
+
+        PrintWriter pw = new PrintWriter(merged);
+
+        String[] s = f.list();
+        pw.println("<HTML><style>\n" +
+                "table, th, td {\n" +
+                "  border: 1px solid black;\n" +
+                "}\n" +
+                "</style><Body><table style=\"width:100%\"><tr><th>a</th><th>b</th><th>c</th><th>d</th></tr>");
+        for (String s1 : s) {
+            File f1 = new File(f, s1);
+            BufferedReader br = new BufferedReader(new FileReader(f1));
+
+            String line = "";
+            while ((line = br.readLine()) != null) {
+                pw.println("<tr>"+getHtmlData(line)+"</tr>");
+            }
+            f1.delete();
+        }
+        pw.println("</table></Body></HTML>");
+
+        pw.flush();
+        pw.close();
+    }
+
+    public static String getHtmlData(String strJsonData) {
+        return jsonToHtml( new JSONObject( strJsonData ) );
+    }
+
+    private static String jsonToHtml(Object obj) {
+        StringBuilder html = new StringBuilder( );
+        String color = "blue";
+        try {
+            if (obj instanceof JSONObject) {
+                JSONObject jsonObject = (JSONObject)obj;
+                String[] keys = JSONObject.getNames( jsonObject );
+
+                html.append("<div class=\"json_object\">");
+
+                if (keys.length > 0) {
+                    for (String key : keys) {
+                        // print the key and open a DIV
+                        html.append("<td><div><span class=\"json_key\">")
+                                .append(key).append("</span> : ");
+
+                        Object val = jsonObject.get(key);
+                        // recursive call
+                        if(key.startsWith("sentiment"))
+                        {
+                            color=val.toString();
+                        }
+                        if(val.toString().startsWith("http")) {
+                            html.append("<style>a:link {color: "+color
+                                    +";background-color: transparent;text-decoration: none;}a:visited {color: "+color
+                                    +";background-color: transparent;text-decoration: none;}a:hover {color: "+color
+                                    +";background-color: transparent;text-decoration: underline;}a:active {color: "+color
+                                    +";background-color: transparent;text-decoration: underline;}</style>");
+                            html.append( "<a href=\""+val+"\">"  );
+                            html.append( jsonToHtml( val ) );
+                            html.append( "</a>" );
+
+                        }
+                        else
+                            html.append( jsonToHtml( val ) );
+
+                        // close the div
+                        html.append("</div></td>");
+                    }
+                }
+
+                html.append("</div>");
+
+            } else if (obj instanceof JSONArray) {
+                JSONArray array = (JSONArray)obj;
+                for ( int i=0; i < array.length( ); i++) {
+                    // recursive call
+                    html.append( jsonToHtml( array.get(i) ) );
+                }
+            } else {
+                // print the value
+                html.append( obj );
+            }
+        } catch (JSONException e) { return e.getLocalizedMessage( ) ; }
+
+        return html.toString( );
+    }
 
 }

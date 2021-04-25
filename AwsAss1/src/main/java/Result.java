@@ -4,9 +4,11 @@ public class Result {
     public int Reviewindex;// review index in the job
     public int sentiment;
     public String[] entities; // PERSON, LOCATION, ORGANIZATION
+    public String link;
 
-    public Result(int jobID, int reviewindex) {
+    public Result(int jobID, int reviewindex, String link) {
         this.jobID = jobID;
+        this.link = link;
         Reviewindex = reviewindex;
     }
 
