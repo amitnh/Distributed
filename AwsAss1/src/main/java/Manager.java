@@ -79,10 +79,9 @@ public class Manager{
                 for (Job j: jobs.values()){ // calculates number of review tasks left
                     currentReviews+= j.remainingResponses;
                 }
+                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n pushJobToSQSreview-currentReviews:" + currentReviews + " - job review size "+ job.reviews.size() +"job name: " +job.title); // todo delete
                 numOfCurrWorkers = createNewWorkers(currentReviews); // if needed adds new worker instances, checks with SQS size
-                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n pushJobToSQSreview - job review size "+ job.reviews.size() +"job name: " +job.title); // todo delete
                 pushJobToSQSreview(job);
-
             }
             //now all the messages are handled and can be deleted
 

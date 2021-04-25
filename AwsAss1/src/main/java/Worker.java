@@ -13,8 +13,8 @@ import software.amazon.awssdk.services.sqs.model.Message;
 
 public class Worker {
 
-    //static sentimentAnalysisHandler sentimentAnalysisHandler = new sentimentAnalysisHandler(); todo add
-    //static namedEntityRecognitionHandler namedEntityRecognitionHandler  = new namedEntityRecognitionHandler();todo add
+    static sentimentAnalysisHandler sentimentAnalysisHandler = new sentimentAnalysisHandler();
+    static namedEntityRecognitionHandler namedEntityRecognitionHandler  = new namedEntityRecognitionHandler();
 
     public static void main(String[] args) {
 
@@ -40,10 +40,9 @@ public class Worker {
 
             Result result = new Result(review.getJobID(),review.getIndex());
             String reviewStr = review.getText();
-            //result.setSentimentAnalysis(sentimentAnalysisHandler.findSentiment(reviewStr));todo add
-            //result.setNamedEntityRecognition(namedEntityRecognitionHandler.findEntities(reviewStr)); todo add
-            result.setSentimentAnalysis(5);
-            result.setNamedEntityRecognition(new String[]{"banana test entities","2","3"});
+            result.setSentimentAnalysis(sentimentAnalysisHandler.findSentiment(reviewStr));
+            result.setNamedEntityRecognition(namedEntityRecognitionHandler.findEntities(reviewStr));
+
             results.add(AwsHelper.toMSG(result));
 
         }

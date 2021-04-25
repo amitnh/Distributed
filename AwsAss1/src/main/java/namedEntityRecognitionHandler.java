@@ -1,4 +1,4 @@
-/*import java.util.List;
+import java.util.List;
 import java.util.Properties;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations.NamedEntityTagAnnotation;
@@ -12,9 +12,9 @@ import edu.stanford.nlp.rnn.RNNCoreAnnotations;
 import edu.stanford.nlp.sentiment.SentimentCoreAnnotations;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.util.CoreMap;
-import java.util.List;*/
+import java.util.List;
 
-public class namedEntityRecognitionHandler {/*
+public class namedEntityRecognitionHandler {
     static StanfordCoreNLP NERPipeline;
 
     public namedEntityRecognitionHandler() {
@@ -65,5 +65,5 @@ public class namedEntityRecognitionHandler {/*
                 System.out.println("\t-" + word + ":" + ne);
             }
         }
-    }*/
+    }
 }
