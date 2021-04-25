@@ -151,7 +151,7 @@ public class Manager{
             jobName = (new JSONObject(Line)).get("title").toString();
             nextReviewIndex =0;
 
-            while( Line  != null){
+            while( Line  != null ){
                 JSONObject jsnobject = new JSONObject(Line);
                 JSONArray jsonArray = jsnobject.getJSONArray("reviews");
                 for (int i = 0; i < jsonArray.length(); i++) {
