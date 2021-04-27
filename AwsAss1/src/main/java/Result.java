@@ -10,6 +10,7 @@ public class Result {
         this.jobID = jobID;
         this.link = link;
         Reviewindex = reviewindex;
+        this.entities = new String[3];
     }
 
     public void setSentimentAnalysis(int sentiment) {

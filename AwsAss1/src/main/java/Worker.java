@@ -15,11 +15,11 @@ public class Worker {
         sentiment = new sentimentAnalysisHandler();
         entity = new namedEntityRecognitionHandler();
         //Running on t2-XL means we have 4 vCPUs.
-       // for(int i=0; i<4;i++) {
+        for(int i=0; i<4;i++) {
             WorkerThread resultThread = new WorkerThread();
             Thread thread = new Thread(resultThread);
             thread.start();
-        //}
+        }
     }
 
 
@@ -50,7 +50,7 @@ public class Worker {
                 Review review = gson.fromJson(Body, Review.class);
 
 
-                Result result = new Result(review.getJobID(),review.getIndex());
+                Result result = new Result(review.getJobID(),review.getIndex(),review.getLink());
                 String reviewStr = review.getText();
                 result.setSentimentAnalysis(sentiment.findSentiment(reviewStr));
                 result.setNamedEntityRecognition(entity.findEntities(reviewStr));

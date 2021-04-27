@@ -176,9 +176,9 @@ public class LocalApplication {
     }
 
     public static void MergeTextFiles(String outputname) throws IOException {
-        File f = new File("./target/LocalApplication/"+outputname+"/");
+        File f = new File("./"+outputname+"/");
 
-        File merged = new File("./target/LocalApplication/"+outputname+".html");
+        File merged = new File("./"+outputname+".html");
 
         PrintWriter pw = new PrintWriter(merged);
 

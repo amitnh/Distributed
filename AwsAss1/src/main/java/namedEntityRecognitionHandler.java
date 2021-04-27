@@ -22,7 +22,7 @@ import java.util.List;
             NERPipeline = new StanfordCoreNLP(props);
         }
         public static String[] findEntities(String review) {
-            String[] s = new String[3]; // PERSON, LOCATION, ORGANIZATION
+            String[] s = new String[]{"PERSON:","LOCATION:","ORGANIZATION:"}; // PERSON, LOCATION, ORGANIZATION
 // create an empty Annotation just with the given text
             Annotation document = new Annotation(review);
 // run all Annotators on this text
@@ -38,11 +38,20 @@ import java.util.List;
                     String word = token.get(CoreAnnotations.TextAnnotation.class);
 // this is the NER label of the token
                     String ne = token.get(CoreAnnotations.NamedEntityTagAnnotation.class);
-                    if (ne == "PERSON") s[0] += word + ",";
-                    else if (ne == "LOCATION") s[1] += word + ",";
-                    else if (ne == "ORGANIZATION") s[2] += word + ",";
+                    if (ne.equals("PERSON")) s[0] += word + ",";
+                    else if (ne.equals("LOCATION")) s[1] += word + ",";
+                    else if (ne.equals("ORGANIZATION")) s[2] += word + ",";
                 }
             }
+            //removing last comma
+            if(s[0].length()>"PERSON:".length())
+                s[0] =  s[0].substring(0,s[0].length()-1);
+
+            if(s[1].length()>"LOCATION:".length())
+                s[1] =  s[1].substring(0,s[1].length()-1);
+
+            if(s[2].length()>"ORGANIZATION:".length())
+                s[2] =  s[2].substring(0,s[2].length()-1);
             return s;
         }
         public static void printEntities(String review) {

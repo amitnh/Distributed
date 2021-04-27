@@ -27,9 +27,9 @@ public class AwsHelper {
     public static Ec2Client ec2 = Ec2Client.builder().region(Region.US_EAST_1).build();
 
     public static int protection=0; //todo remove later
-    public static int maxNumOfInstances=5; //todo remove later
+    public static int maxNumOfInstances=18; //todo remove later
 
-    public static String bucket_name = "bucket-amitandtal5";
+    public static String bucket_name = "bucket-amitandtal6";
     public static int NumOfRetriveMSGs = 1;
     public static String sqsTesting = "sqsTesting";
     public static String sqsLocalsToManager = "sqsLocalsToManager";
@@ -214,8 +214,8 @@ public class AwsHelper {
                     .minCount(1)
                     .userData(getDataScript(jarAddress))
                     .iamInstanceProfile(role)
-                    .keyName("amital")
-                    .securityGroupIds("sg-5422235a")//sg-7e7c937d tal
+                    .keyName("talamit")
+                    .securityGroupIds("sg-7e7c937d")// amit sg-5422235a
                     .build();
             RunInstancesResponse buildManagerResponse = ec2.runInstances(runRequest);
             String instanceId = buildManagerResponse.instances().get(0).instanceId();
