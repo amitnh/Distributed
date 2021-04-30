@@ -196,7 +196,7 @@ public class LocalApplication {
             while ((line = br.readLine()) != null) {
                 pw.println("<tr>"+getHtmlData(line)+"</tr>");
             }
-            f1.delete();
+            //f1.delete(); todo remove comment
         }
         pw.println("</table></Body></HTML>");
 

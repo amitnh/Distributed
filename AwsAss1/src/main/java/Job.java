@@ -1,4 +1,5 @@
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Job{
 
@@ -8,15 +9,15 @@ public class Job{
     public List<Review> reviews;
     public Result[] results;
     public String outputFileName;
-    public int remainingResponses;
+    public AtomicInteger remainingResponses;
 
     public Job(String jobOwner, int jobID, String title, List<Review> reviews,  String outputFileName) {
         this.jobOwner = jobOwner;
         this.jobID = jobID;
         this.title = title;
         this.reviews = reviews;
-        this.remainingResponses = reviews.size();
-        this.results = new Result[remainingResponses];
+        this.remainingResponses.set(reviews.size());
+        this.results = new Result[remainingResponses.get()];
         this.outputFileName = outputFileName;
     }
 
@@ -69,11 +70,11 @@ public class Job{
         this.outputFileName = outputFileName;
     }
 
-    public int getRemainingResponses() {
+    public AtomicInteger getRemainingResponses() {
         return remainingResponses;
     }
 
-    public void setRemainingResponses(int remainingResponses) {
+    public void setRemainingResponses(AtomicInteger remainingResponses) {
         this.remainingResponses = remainingResponses;
     }
 
