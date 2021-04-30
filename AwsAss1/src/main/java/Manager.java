@@ -2,6 +2,8 @@
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.gson.Gson;
 
@@ -9,15 +11,17 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import software.amazon.awssdk.services.sqs.model.Message;
 
+import static sun.misc.GThreadHelper.lock;
+
 public class Manager{
     public static  Map<Integer, Job> jobs;
-    public static int numOfCurrWorkers=0;
+    public static AtomicInteger numOfCurrWorkers =  new AtomicInteger(0);
     public static int terminated = 0;
-    public static Integer nextJobID = 0;
-    public static int nextReviewIndex = 0;
-    public static int n=0;
-    public static int OngoingJobs=0;
+    public static AtomicInteger nextJobID =  new AtomicInteger(0);
+    public static AtomicInteger OngoingJobs =  new AtomicInteger(0);
     public static Gson gson = new Gson();
+    private static ReentrantLock TerminateLock = new ReentrantLock();
+    private static ReentrantLock JobsLock = new ReentrantLock();
 
 
     public static void main(String[] args) {
@@ -47,7 +51,7 @@ public class Manager{
                 String address = arguments[0];
                 String jobOwner = arguments[1];
                 String outputFileName = arguments[2];
-                n = Integer.parseInt(arguments[3]);
+                int n = Integer.parseInt(arguments[3]);
 
                 // if terminated dont add new Files, but still finish what he got so far
                 Job job = downloadAndParse(address, jobOwner, outputFileName);// jobs contains his JobID
@@ -60,14 +64,17 @@ public class Manager{
                     AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n ?@!?#!?$RE?AS?SAFSDF"); // todo delete
                     continue;
                 }
-
-                jobs.put(nextJobID, job); // adds the Job to the jobs Map
-                OngoingJobs++;
+                jobs.put(nextJobID.get(), job); // adds the Job to the jobs Map
+                OngoingJobs.incrementAndGet();
                 if(Integer.parseInt(arguments[4])!=0) {
+//                    locking terminate so no other thread will be writing to terminated at the same time.
+                    TerminateLock.lock();
                     if (terminated==0)
                         terminated=Integer.parseInt(arguments[4]);
                     else
                         terminated--;
+                    TerminateLock.unlock();
+
                     AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n Manager. terminated: "+ terminated); // todo delete
                 }
                 //now another thread can check for finished jobs and results
@@ -76,12 +83,17 @@ public class Manager{
 
                 //---------------------------------------------------------------
                 int currentReviews = 0;
+                JobsLock.lock();
+
                 for (Job j: jobs.values()){ // calculates number of review tasks left
                     currentReviews+= j.remainingResponses;
                 }
                 AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n pushJobToSQSreview-currentReviews:" + currentReviews + " - job review size "+ job.reviews.size() +"job name: " +job.title); // todo delete
-                numOfCurrWorkers = createNewWorkers(currentReviews); // if needed adds new worker instances, checks with SQS size
+                numOfCurrWorkers.set(createNewWorkers(currentReviews, n)); // if needed adds new worker instances, checks with SQS size
+                JobsLock.unlock();
+
                 pushJobToSQSreview(job);
+
             }
             //now all the messages are handled and can be deleted
 
@@ -106,18 +118,18 @@ public class Manager{
     }
 
 
-    private static int createNewWorkers(int numOfReviews) {
-
+    private static int createNewWorkers(int numOfReviews,int n) {
+        int numofworkers = numOfCurrWorkers.get();
         int neededWorkers = (int)Math.ceil((float)numOfReviews/n);
         int newWorkers = 0;
-        if (neededWorkers>numOfCurrWorkers) {
-            newWorkers=neededWorkers-numOfCurrWorkers;
+        if (neededWorkers>numofworkers) {
+            newWorkers=neededWorkers-numofworkers;
             for (int w=0;w<newWorkers;w++){
 
                 AwsHelper.startInstance("Worker","Worker.jar");
             }
         }
-        return newWorkers+numOfCurrWorkers;
+        return newWorkers+numofworkers;
     }
 
     //check if job already exists
@@ -148,7 +160,7 @@ public class Manager{
             BufferedReader Buffer = new BufferedReader(reader);
             String Line = Buffer.readLine();
             jobName = (new JSONObject(Line)).get("title").toString();
-            nextReviewIndex =0;
+            int NextReviewIndex =0;
 
             while( Line  != null ){
                 JSONObject jsnobject = new JSONObject(Line);
@@ -156,8 +168,8 @@ public class Manager{
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject explrObject = jsonArray.getJSONObject(i);
                     Review review = gson.fromJson(String.valueOf(explrObject), Review.class);
-                    review.setIndex(nextReviewIndex++);
-                    review.setJobID(nextJobID);
+                    review.setIndex(NextReviewIndex++);
+                    review.setJobID(nextJobID.get());
                     reviewList.add(review);
 
                 }
@@ -167,7 +179,7 @@ public class Manager{
             f.delete();
         } catch (IOException ignored) {
         }
-        return new Job(jobOwner,  nextJobID++, jobName,  reviewList,  outputFileName);
+        return new Job(jobOwner, nextJobID.incrementAndGet()-1, jobName,  reviewList,  outputFileName);
     }
     static class ManagerThread implements Runnable {
         @Override
@@ -180,9 +192,9 @@ public class Manager{
 
                 for (Job j : finishedJobs) {
                     AwsHelper.pushSQS("sqsManagerToLocal-" + j.jobOwner, j.outputFileName);
-                    OngoingJobs--;
+                    OngoingJobs.decrementAndGet();
                 }
-                if (OngoingJobs==0 && terminated == 1) {
+                if (OngoingJobs.get()==0 && terminated == 1) {
                     AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n manager's thread terminating");// todo delete
                     AwsHelper.terminateInstancesByTag("Worker"); //numOfCurrWorkers
                     // delete sqs's
