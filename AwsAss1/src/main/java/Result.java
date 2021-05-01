@@ -5,6 +5,9 @@ public class Result {
     public int sentiment;
     public String[] entities; // PERSON, LOCATION, ORGANIZATION
     public String link;
+    public String sarcastic;
+
+
 
     public Result(int jobID, int reviewindex, String link) {
         this.jobID = jobID;
@@ -19,6 +22,11 @@ public class Result {
     public void setNamedEntityRecognition(String[] entities) {
         this.entities=entities;
     }
-
+    public void setSarcastic(Boolean sarcastic) {
+        if(sarcastic)
+            this.sarcastic = "Sarcastic";
+        else
+            this.sarcastic = "Not sarcastic";
+    }
 
 }

@@ -56,18 +56,20 @@ public class LocalApplication {
         if(!AwsHelper.isManagerOnline()) {
             System.out.println("Manager not Online");// todo delete
 
-            // im the first local! :)
-            AwsHelper.OpenS3();       //open a new bucket, and upload manager and workers JAR files
-            AwsHelper.uploadToS3("../Manager/AwsAss1.jar","Manager.jar");
-            AwsHelper.uploadToS3("../Worker/AwsAss1.jar","Worker.jar");
+//            // im the first local! :)
+//            try {
+//                AwsHelper.OpenS3();       //open a new bucket, and upload manager and workers JAR files
+//                AwsHelper.uploadToS3("../Manager/AwsAss1.jar", "Manager.jar");
+//                AwsHelper.uploadToS3("../Worker/AwsAss1.jar", "Worker.jar");
+//            }
+//            catch(Exception ignored){}
+
             runManager();   //create a new instance of a manager
 
             AwsHelper.OpenSQS(sqsLocalsToManager);      //this SQS is for ALL locals to upload jobs for the manager
             //manager is now online and ready for jobs
         }
         AwsHelper.OpenSQS(sqsManagerToLocal);  //this SQS is for this local ONLY for messages about finished jobs from manager.
-        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\ntesting sqsTesting");// todo delete
-
 
         //upload file from local folder to S3, receive a URL for the manager to use later
         //        upload_to_s3(args[0]);
@@ -78,10 +80,6 @@ public class LocalApplication {
             //pushing job to SQS as a URL for the uploaded file
             //arguments  -> [address, jobOwner, outputFileName,n,[terminating]]
                 terminated = Integer.parseInt(args[args.length - 1])*numOfFiles; // only in the last file
-//            String address = arguments[0];
-//            String jobOwner = arguments[1];
-//            String outputFileName = arguments[2];
-//            n = Integer.parseInt(arguments[3]);
 
             String[] arguments = {key, String.valueOf(myID), args[numOfFiles+i], args[args.length - 2],String.valueOf(terminated)};
             System.out.println("");
@@ -102,9 +100,8 @@ public class LocalApplication {
 
     private static void runManager() {
         System.out.println("running manager");
-
-        AwsHelper.startInstance("Manager","Manager.jar");
-
+        if (!AwsHelper.isManagerOnline()) // for concurrency- double check
+            AwsHelper.startInstance("Manager","Manager.jar");
     }
 
 
@@ -119,7 +116,6 @@ public class LocalApplication {
                  finishedJobsOutputNames.add(m.body());
 
             downloadResults(finishedJobsOutputNames); // download from s3 to one file on Local Machine
-            //filesToHTML(finishedJobsOutputNames); // change files from txt to HTML todo
 
 
 
@@ -141,7 +137,6 @@ public class LocalApplication {
                 break;
         }
         AwsHelper.deleteSQS(sqsManagerToLocal); // delete my sqs
-        //TODO makeHtmlFile(Result);
         System.out.println("finished");
 
     }
@@ -168,10 +163,16 @@ public class LocalApplication {
                     AwsHelper.downloadFile(outputname + "-" + i, "./" + outputname + "/" + i );
                     AwsHelper.deleteFile(outputname + "-" + i);
 
-                    File file = new File(folder, outputname + "-" + i);
-                    concatToHTML(pw,file);
+                    System.out.println("downloaded file");
+                    File file = new File(folder, "./"+outputname + "-" + i);
+                    System.out.println(" file opened");
+                    BufferedReader br = new BufferedReader(new FileReader(file));
+                    String line = "";
+                    while ((line = br.readLine()) != null) {
+                        pw.println("<tr>"+getHtmlData(line)+"</tr>");
+                    }
                     i++;
-                    file.delete();
+//                    file.delete();
                 }
                 catch (Exception ignored){
                     break;
@@ -186,17 +187,17 @@ public class LocalApplication {
     }
 
 
-    public static void concatToHTML(PrintWriter pw,File f) throws IOException {
-
-            BufferedReader br = new BufferedReader(new FileReader(f));
-
-            String line = "";
-            while ((line = br.readLine()) != null) {
-                pw.println("<tr>"+getHtmlData(line)+"</tr>");
-            }
-            //f1.delete(); todo remove comment
-
-    }
+//    public static void concatToHTML(PrintWriter pw,BufferedReader br) throws IOException {
+//
+//        System.out.println("reading file");
+//            String line = "";
+//            while ((line = br.readLine()) != null) {
+//                pw.println("<tr>"+getHtmlData(line)+"</tr>");
+//            }
+//        System.out.println("finished reading file");
+//            //f1.delete(); todo remove comment
+//
+//    }
 
 
     public static void MergeTextFiles(String outputname) throws IOException {
@@ -220,7 +221,7 @@ public class LocalApplication {
             while ((line = br.readLine()) != null) {
                 pw.println("<tr>"+getHtmlData(line)+"</tr>");
             }
-            //f1.delete(); todo remove comment
+            f1.delete();
         }
         pw.println("</table></Body></HTML>");
 
@@ -251,6 +252,10 @@ public class LocalApplication {
                         Object val = jsonObject.get(key);
                         // recursive call
                         if(key.startsWith("sentiment"))
+                        {
+                            continue;
+                        }
+                        else if(key.startsWith("sentiment"))
                         {
                             color=val.toString();
                         }

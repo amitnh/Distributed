@@ -1,24 +1,32 @@
 
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import com.google.gson.Gson;
 
 import software.amazon.awssdk.services.sqs.model.Message;
+
+import static java.lang.Math.abs;
 
 public class Worker {
 
     public static sentimentAnalysisHandler sentiment;
     public static namedEntityRecognitionHandler entity;
-
+    public static ExecutorService pool;
 
     public static void main(String[] args) {
         sentiment = new sentimentAnalysisHandler();
         entity = new namedEntityRecognitionHandler();
+
+
         //Running on t2-XL means we have 4 vCPUs.
-        for(int i=0; i<4;i++) {
-            WorkerThread resultThread = new WorkerThread();
-            Thread thread = new Thread(resultThread);
-            thread.start();
+        int cores = Runtime.getRuntime().availableProcessors();
+        pool  = Executors.newFixedThreadPool(cores);
+        for (int i =0;i<cores;i++) {
+            Worker.WorkerThread resultThread = new Worker.WorkerThread();
+            pool.execute(resultThread);
         }
     }
 
@@ -54,7 +62,8 @@ public class Worker {
                 String reviewStr = review.getText();
                 result.setSentimentAnalysis(sentiment.findSentiment(reviewStr));
                 result.setNamedEntityRecognition(entity.findEntities(reviewStr));
-
+                /// if |sarcasem-rating|>2 -> sarcastic!
+                result.setSarcastic(abs(result.sentiment-Integer.parseInt(review.rating))>2);
                 results.add(AwsHelper.toMSG(result));
 
             }
