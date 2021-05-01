@@ -29,7 +29,7 @@ public class AwsHelper {
     public static int protection=0; //todo remove later
     public static int maxNumOfInstances=18; //todo remove later
 
-    public static String bucket_name = "bucket-amitandtal7";
+    public static String bucket_name = "bucket-amitandtal1";
     public static int NumOfRetriveMSGs = 1;
     public static String sqsTesting = "sqsTesting";
     public static String sqsLocalsToManager = "sqsLocalsToManager";
@@ -107,7 +107,7 @@ public class AwsHelper {
         ReceiveMessageRequest receiveRequest = ReceiveMessageRequest.builder()
                 .queueUrl(queueUrl)
                 //.visibilityTimeout(2) // waits 2 sec for reply
-                .maxNumberOfMessages(NumOfRetriveMSGs)  //TODO maybe more than one message per pop
+                .maxNumberOfMessages(NumOfRetriveMSGs)  //TODO change to BATCH_SIZE
                 .build();
         return sqs.receiveMessage(receiveRequest).messages();
     }
@@ -215,8 +215,8 @@ public class AwsHelper {
                     .minCount(1)
                     .userData(getDataScript(jarAddress))
                     .iamInstanceProfile(role)
-                    .keyName("amital")
-                    .securityGroupIds("sg-5422235a")// sg-7e7c937d
+                    .keyName("talamit")
+                    .securityGroupIds("sg-7e7c937d")//sg-5422235a
                     .build();
             RunInstancesResponse buildManagerResponse = ec2.runInstances(runRequest);
             String instanceId = buildManagerResponse.instances().get(0).instanceId();

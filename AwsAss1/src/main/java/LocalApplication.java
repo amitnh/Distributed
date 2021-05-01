@@ -149,31 +149,55 @@ public class LocalApplication {
     private static void downloadResults(List<String> finishedJobsOutputNames) throws IOException {
         for (String outputname: finishedJobsOutputNames){
             //Creating the output directory
-            File file = new File("./"+outputname);
-            file.mkdir();
+            File fileFolder = new File("./"+outputname);
+            fileFolder.mkdir();
+            File folder = new File("./"+outputname+"/");
 
+            File merged = new File("./"+outputname+".html");
+
+            PrintWriter pw = new PrintWriter(merged);
+            //start writing html format to outputname.html:
+            pw.println("<HTML><style>\n" +
+                    "table, th, td {\n" +
+                    "  border: 1px solid black;\n" +
+                    "}\n" +
+                    "</style><Body><table style=\"width:100%\"><tr><th>a</th><th>b</th><th>c</th><th>d</th></tr>");
             int i=0;
             while(true) { // download all files and deletes them
                 try {
                     AwsHelper.downloadFile(outputname + "-" + i, "./" + outputname + "/" + i );
                     AwsHelper.deleteFile(outputname + "-" + i);
+
+                    File file = new File(folder, outputname + "-" + i);
+                    concatToHTML(pw,file);
                     i++;
+                    file.delete();
                 }
                 catch (Exception ignored){
                     break;
                 }
             }
-            MergeTextFiles(outputname);
+
+            pw.println("</table></Body></HTML>");
+
+            pw.flush();
+            pw.close();
         }
     }
 
-    private static List<Message> CheckFinishedJobs() {
-        List<Message> results = AwsHelper.popSQS(sqsManagerToLocal);
-        if(results.size()>0)
-            System.out.println("YAY FINISHED JOB");
-            jobsCounter-= results.size();
-        return results;
+
+    public static void concatToHTML(PrintWriter pw,File f) throws IOException {
+
+            BufferedReader br = new BufferedReader(new FileReader(f));
+
+            String line = "";
+            while ((line = br.readLine()) != null) {
+                pw.println("<tr>"+getHtmlData(line)+"</tr>");
+            }
+            //f1.delete(); todo remove comment
+
     }
+
 
     public static void MergeTextFiles(String outputname) throws IOException {
         File f = new File("./"+outputname+"/");
@@ -264,6 +288,14 @@ public class LocalApplication {
         } catch (JSONException e) { return e.getLocalizedMessage( ) ; }
 
         return html.toString( );
+    }
+
+    private static List<Message> CheckFinishedJobs() {
+        List<Message> results = AwsHelper.popSQS(sqsManagerToLocal);
+        if(results.size()>0)
+            System.out.println("YAY FINISHED JOB");
+        jobsCounter-= results.size();
+        return results;
     }
 
 }

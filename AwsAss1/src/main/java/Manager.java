@@ -198,6 +198,7 @@ public class Manager {
                 String outputFileName = arguments[2];
                 int n = Integer.parseInt(arguments[3]);
                 AwsHelper.pushSQS(AwsHelper.sqsTesting, "\nreceiveTask Messages3 +" + address +jobOwner +outputFileName); // todo delete
+
                 // if terminated dont add new Files, but still finish what he got so far
                 Job job = downloadAndParse(address, jobOwner, outputFileName);// jobs contains his JobID
                 //this job might already been processed. same message can be retrieved twice from the sqs

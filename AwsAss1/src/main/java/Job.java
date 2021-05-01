@@ -77,6 +77,9 @@ public class Job{
     public void setRemainingResponses(AtomicInteger remainingResponses) {
         this.remainingResponses = remainingResponses;
     }
+    public int decrementRemainingResponses() {
+        return this.remainingResponses.decrementAndGet();
+    }
 
 
 
