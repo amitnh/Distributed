@@ -23,6 +23,7 @@ public class Manager {
     public static Gson gson = new Gson();
     public static final ReentrantLock TerminateLock = new ReentrantLock();
     public static final ReentrantLock JobsLock = new ReentrantLock();
+
     public static ExecutorService pool;
 
     public static void main(String[] args) {
@@ -36,7 +37,7 @@ public class Manager {
 
 
         int cores = Runtime.getRuntime().availableProcessors();
-        pool  = Executors.newFixedThreadPool(2);// todo msg
+        pool  = Executors.newFixedThreadPool(cores);
 
         for (int i =0;i<cores;i++) {
             ManagerThread sendReceieveTasks = new ManagerThread();
@@ -124,7 +125,7 @@ public class Manager {
             AwsHelper.pushSQS(AwsHelper.sqsTesting, "\ndownloadAndParse error44:  " + ignored); // todo delete
 
         }
-        AwsHelper.pushSQS(AwsHelper.sqsTesting, "\ndownloadAndParse before return Job:  " + jobOwner + " " + jobid+ " "+ jobName+ " "+  reviewList+ " "+  outputFileName); // todo delete
+        AwsHelper.pushSQS(AwsHelper.sqsTesting, "\ndownloadAndParse before return Job:  " + jobOwner + " " + jobid+ " "+ jobName+ " "+  outputFileName); // todo delete
 
         return new Job(jobOwner, jobid, jobName,  reviewList,  outputFileName);
     }
@@ -197,7 +198,6 @@ public class Manager {
                 String outputFileName = arguments[2];
                 int n = Integer.parseInt(arguments[3]);
                 AwsHelper.pushSQS(AwsHelper.sqsTesting, "\nreceiveTask Messages3 +" + address +jobOwner +outputFileName); // todo delete
-
                 // if terminated dont add new Files, but still finish what he got so far
                 Job job = downloadAndParse(address, jobOwner, outputFileName);// jobs contains his JobID
                 //this job might already been processed. same message can be retrieved twice from the sqs

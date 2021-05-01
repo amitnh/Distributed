@@ -16,7 +16,7 @@ public class Job{
         this.jobID = jobID;
         this.title = title;
         this.reviews = reviews;
-        this.remainingResponses.set(reviews.size());
+        this.remainingResponses = new AtomicInteger(reviews.size());
         this.results = new Result[remainingResponses.get()];
         this.outputFileName = outputFileName;
     }
