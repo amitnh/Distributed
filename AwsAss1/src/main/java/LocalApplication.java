@@ -40,7 +40,6 @@ public class LocalApplication {
     private static String sqsManagerToLocal;
     private static String sqsLocalsToManager = "sqsLocalsToManager";
     private static String sqsTesting = "sqsTesting";
-
     //args[] = [inputfilename1, ..., inputfilenameN, outputfilename1,..., outputfilenameN, n, terminate]
     public static void main(String[] args) throws IOException {
         System.out.println("Local Main");
@@ -156,7 +155,7 @@ public class LocalApplication {
                     "table, th, td {\n" +
                     "  border: 1px solid black;\n" +
                     "}\n" +
-                    "</style><Body><table style=\"width:100%\"><tr><th>a</th><th>b</th><th>c</th><th>d</th></tr>");
+                    "</style><Body><table style=\"width:100%\"><tr><th>Entities</th><th>Review Link</th><th>Sarcasm Detection</th></tr>");
             int i=0;
             while(true) { // download all files and deletes them
                 try {
@@ -164,7 +163,7 @@ public class LocalApplication {
                     AwsHelper.deleteFile(outputname + "-" + i);
 
                     System.out.println("downloaded file");
-                    File file = new File(folder, "./"+outputname + "-" + i);
+                    File file = new File(folder, "./"+i);
                     System.out.println(" file opened");
                     BufferedReader br = new BufferedReader(new FileReader(file));
                     String line = "";
@@ -172,7 +171,7 @@ public class LocalApplication {
                         pw.println("<tr>"+getHtmlData(line)+"</tr>");
                     }
                     i++;
-//                    file.delete();
+                    file.delete();
                 }
                 catch (Exception ignored){
                     break;
@@ -212,7 +211,7 @@ public class LocalApplication {
                 "table, th, td {\n" +
                 "  border: 1px solid black;\n" +
                 "}\n" +
-                "</style><Body><table style=\"width:100%\"><tr><th>a</th><th>b</th><th>c</th><th>d</th></tr>");
+                "</style><Body><table style=\"width:100%\"><tr><th>Entities</th><th>Review Link</th><th>Sarcasm Detection</th></tr>");
         for (String s1 : s) {
             File f1 = new File(f, s1);
             BufferedReader br = new BufferedReader(new FileReader(f1));
@@ -246,32 +245,46 @@ public class LocalApplication {
                 if (keys.length > 0) {
                     for (String key : keys) {
                         // print the key and open a DIV
-                        html.append("<td><div><span class=\"json_key\">")
-                                .append(key).append("</span> : ");
+
 
                         Object val = jsonObject.get(key);
                         // recursive call
+                        if(key.startsWith("jobID")) continue;
+                        if(key.startsWith("Reviewindex")) continue;
+
                         if(key.startsWith("sentiment"))
                         {
+                            switch(val.toString()) {
+                                case "1":
+                                    color="darkRed";
+                                    break;
+                                case "2":
+                                    color="red";
+                                    break;
+                                case "3":
+                                    color="black";
+                                    break;
+                                case "4":
+                                    color="lightGreen";
+                                    break;
+                                case "5":
+                                    color="darkGreen";
+                                    break;
+
+                            }
                             continue;
                         }
-                        else if(key.startsWith("sentiment"))
-                        {
-                            color=val.toString();
-                        }
+                        html.append("<td><div>");
+//                        <span class=\"json_key\">")
+//                                .append(key).append("</span> : ");
                         if(val.toString().startsWith("http")) {
-                            html.append("<style>a:link {color: "+color
-                                    +";background-color: transparent;text-decoration: none;}a:visited {color: "+color
-                                    +";background-color: transparent;text-decoration: none;}a:hover {color: "+color
-                                    +";background-color: transparent;text-decoration: underline;}a:active {color: "+color
-                                    +";background-color: transparent;text-decoration: underline;}</style>");
-                            html.append( "<a href=\""+val+"\">"  );
+                            html.append( "<a href=\""+val+"\" style=\"color: "+color+"\">"  );
                             html.append( jsonToHtml( val ) );
                             html.append( "</a>" );
 
                         }
                         else
-                            html.append( jsonToHtml( val ) );
+                          html.append( jsonToHtml( val ) );
 
                         // close the div
                         html.append("</div></td>");

@@ -22,7 +22,7 @@ import java.util.List;
             NERPipeline = new StanfordCoreNLP(props);
         }
         public static String[] findEntities(String review) {
-            String[] s = new String[]{"PERSON:","LOCATION:","ORGANIZATION:"}; // PERSON, LOCATION, ORGANIZATION
+            String[] s = new String[]{"PERSON:","\nLOCATION:","\nORGANIZATION:"}; // PERSON, LOCATION, ORGANIZATION
 // create an empty Annotation just with the given text
             Annotation document = new Annotation(review);
 // run all Annotators on this text
@@ -47,10 +47,10 @@ import java.util.List;
             if(s[0].length()>"PERSON:".length())
                 s[0] =  s[0].substring(0,s[0].length()-1);
 
-            if(s[1].length()>"LOCATION:".length())
+            if(s[1].length()>"\nLOCATION:".length())
                 s[1] =  s[1].substring(0,s[1].length()-1);
 
-            if(s[2].length()>"ORGANIZATION:".length())
+            if(s[2].length()>"\nORGANIZATION:".length())
                 s[2] =  s[2].substring(0,s[2].length()-1);
             return s;
         }
