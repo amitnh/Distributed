@@ -27,14 +27,15 @@ public class AwsHelper {
     public static Ec2Client ec2 = Ec2Client.builder().region(Region.US_EAST_1).build();
 
     public static int protection=0; //todo remove later
-    public static int maxNumOfInstances=18; //todo remove later
+    public static int maxNumOfInstances=7; //todo remove later
 
-    public static String bucket_name = "bucket-amitandtal2";
+    public static String bucket_name = "bucket-amitandtal33";
     public static int NumOfRetriveMSGs = 1;
     public static String sqsTesting = "sqsTesting";
     public static String sqsLocalsToManager = "sqsLocalsToManager";
 
     public static void OpenS3() {
+
         S3Client s3Client;
         //open bucket
         Region region = Region.US_EAST_1;
@@ -55,6 +56,15 @@ public class AwsHelper {
         System.out.println("Bucket created: " + bucket_name);
     }
 
+
+    public static boolean isOpen(String bucket_name){
+            ListBucketsResponse buckets = s3Client.listBuckets();
+            for (Bucket bucket : buckets.buckets())
+                if (bucket.name().equals(bucket_name)) {
+                    return true;
+                }
+        return false;
+    }
     public static void deleteFile(String file) {
         DeleteObjectRequest request = DeleteObjectRequest.builder()
                 .bucket(bucket_name)
@@ -215,8 +225,8 @@ public class AwsHelper {
                     .minCount(1)
                     .userData(getDataScript(jarAddress))
                     .iamInstanceProfile(role)
-                    .keyName("talamit")
-                    .securityGroupIds("sg-7e7c937d")//sg-5422235a
+                    .keyName("amital")
+                    .securityGroupIds("sg-5422235a")//sg-7e7c937d
                     .build();
             RunInstancesResponse buildManagerResponse = ec2.runInstances(runRequest);
             String instanceId = buildManagerResponse.instances().get(0).instanceId();

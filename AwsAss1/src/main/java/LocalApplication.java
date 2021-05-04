@@ -4,6 +4,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -41,7 +42,7 @@ public class LocalApplication {
     private static String sqsLocalsToManager = "sqsLocalsToManager";
     private static String sqsTesting = "sqsTesting";
     //args[] = [inputfilename1, ..., inputfilenameN, outputfilename1,..., outputfilenameN, n, terminate]
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         System.out.println("Local Main");
         AwsHelper.OpenSQS(sqsTesting);      //TODO remove, this SQS is for ALL locals to upload jobs for the manager
 
@@ -52,26 +53,31 @@ public class LocalApplication {
         sqsManagerToLocal = "sqsManagerToLocal-"+myID;
         //check if theres an instance running with TAG-MANAGER AKA big bo$$
         //if there is no manager running, run a new instance of a manager, and create an SQS queueueue
-        if(!AwsHelper.isManagerOnline()) {
+        boolean isFirstLocal = AwsHelper.isOpen(AwsHelper.bucket_name);
+
+        if(!isFirstLocal) {
             System.out.println("Manager not Online");// todo delete
 
-//            // im the first local! :)
-//            try {
-//                AwsHelper.OpenS3();       //open a new bucket, and upload manager and workers JAR files
-//                AwsHelper.uploadToS3("../Manager/AwsAss1.jar", "Manager.jar");
-//                AwsHelper.uploadToS3("../Worker/AwsAss1.jar", "Worker.jar");
-//            }
-//            catch(Exception ignored){}
-
+            AwsHelper.OpenS3();        //opens a new bucket(only if not open already), and upload manager and workers JAR files
+            AwsHelper.uploadToS3("../Manager/AwsAss1.jar", "Manager.jar");
+            AwsHelper.uploadToS3("../Worker/AwsAss1.jar", "Worker.jar");
             runManager();   //create a new instance of a manager
-
             AwsHelper.OpenSQS(sqsLocalsToManager);      //this SQS is for ALL locals to upload jobs for the manager
             //manager is now online and ready for jobs
+
         }
         AwsHelper.OpenSQS(sqsManagerToLocal);  //this SQS is for this local ONLY for messages about finished jobs from manager.
 
+//        waits for the first local to finish initiating
+        while(!AwsHelper.isManagerOnline())
+        {try {
+            TimeUnit.SECONDS.sleep(1); }catch (Exception ignored){}}
+
         //upload file from local folder to S3, receive a URL for the manager to use later
         //        upload_to_s3(args[0]);
+
+        long startTime = System.currentTimeMillis();
+
         for(int i=0 ; i< numOfFiles; i++) {
             String key = args[i];
             AwsHelper.uploadToS3("../Input files/"+key, key);
@@ -93,6 +99,10 @@ public class LocalApplication {
         }
         //wait for all jobs to be ready at finished_SQS
         finish();
+
+        long stopTime = System.currentTimeMillis();
+        long elapsedTime = stopTime - startTime;
+        System.out.println("Total time took: "+ elapsedTime/(60000) + " minutes and " +(elapsedTime/(1000))%60 + " seconds");
     }
 
 
@@ -162,9 +172,7 @@ public class LocalApplication {
                     AwsHelper.downloadFile(outputname + "-" + i, "./" + outputname + "/" + i );
                     AwsHelper.deleteFile(outputname + "-" + i);
 
-                    System.out.println("downloaded file");
                     File file = new File(folder, "./"+i);
-                    System.out.println(" file opened");
                     BufferedReader br = new BufferedReader(new FileReader(file));
                     String line = "";
                     while ((line = br.readLine()) != null) {
@@ -255,19 +263,19 @@ public class LocalApplication {
                         if(key.startsWith("sentiment"))
                         {
                             switch(val.toString()) {
-                                case "1":
+                                case "0":
                                     color="darkRed";
                                     break;
-                                case "2":
+                                case "1":
                                     color="red";
                                     break;
-                                case "3":
+                                case "2":
                                     color="black";
                                     break;
-                                case "4":
+                                case "3":
                                     color="lightGreen";
                                     break;
-                                case "5":
+                                case "4":
                                     color="darkGreen";
                                     break;
 
