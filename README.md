@@ -1,4 +1,8 @@
 # Assignment 1 - Distributed Sarcasm Detector
+
+Amit Nagar Halevy 204210306
+Tal Kapelnik 
+
 ![image](https://user-images.githubusercontent.com/58166360/117177288-853fee00-add9-11eb-80f1-dd0499860b03.png)
 
 <ins>Intro:</ins>
@@ -10,7 +14,7 @@ Then, instances are launched in AWS (workers & a manager) to apply sentiment ana
 
 <ins>How to run:</ins>
 
-1. open the code in intellij and put the right AWS credentials on the "config" file. also update the keypair and securityGroup.
+1. open the code on intellij (eclipse or any other software) and put the right AWS credentials in the "config" file. also update the keypair and securityGroup.
 2. open 4 new folders: LocalAplication,Worker,Manager,InputFiles
 3. make 3 jar files, all with the same name: "AwsAss1.jar" one with main from LocalAplication, another with main from Worker and the las with main from Manager.
 4. put the jar files each in the corresponding folder.
@@ -20,3 +24,9 @@ Then, instances are launched in AWS (workers & a manager) to apply sentiment ana
   where n is- number of avg reviews for worker (used to decide the workers size) 
   and where terminate is- 0 or 1
  
+![image](https://user-images.githubusercontent.com/58166360/117179538-e49efd80-addb-11eb-80e5-9aaf622883d5.png)
+![image](https://user-images.githubusercontent.com/58166360/117179573-eff22900-addb-11eb-9a24-d90d21cea521.png)
+
+
+
+<ins>How to run:</ins>
