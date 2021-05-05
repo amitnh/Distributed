@@ -27,22 +27,32 @@ Then, instances are launched in AWS (workers & a manager) to apply sentiment ana
 ![image](https://user-images.githubusercontent.com/58166360/117179538-e49efd80-addb-11eb-80e5-9aaf622883d5.png)
 ![image](https://user-images.githubusercontent.com/58166360/117179573-eff22900-addb-11eb-9a24-d90d21cea521.png)
 
+how we chose to implement this:
+![image](https://user-images.githubusercontent.com/58166360/117188173-6d6e6700-ade5-11eb-8262-a9ddc6d647ff.png)
+
+this way we can work in parallel.
+
 ----------------------------------------------------------------------------------------------
-<ins>SQS's:</ins>
+<ins>Threads:</ins>
+
+Worker- uses a Thread pool.
+Manager- uses a Thread pool, and have 2 main tasks:
+1. Receive messages from Local Machines.
+2. Upload results from SqsResult to S3
+
+A thread finished a task he pushes the other task to the Thead pool.
+for example- if tread finished job 1, he puts in the Thead pool task 2.
+this way the manager can work in parallel, but also distribute his power and threads in a smart way.
 
 ----------------------------------------------------------------------------------------------
 <ins>Scalability:</ins>
+
 
 ----------------------------------------------------------------------------------------------
 <ins>Persistence:</ins>
 
 The worker only deletes the review after he finished processing it.
 so if he didn't finished for some reson, another worker will take this review for processing.
-
-
-----------------------------------------------------------------------------------------------
-<ins>Threads:</ins>
-Worker- uses a Thread pool,
 
 ----------------------------------------------------------------------------------------------
 <ins>Several Clients At The Same Time:</ins>
