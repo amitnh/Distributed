@@ -57,10 +57,19 @@ so if he didn't finished for some reson, another worker will take this review fo
 ----------------------------------------------------------------------------------------------
 <ins>Several Clients At The Same Time:</ins>
 
+we are fullt supports a run of multiple clients.
+Only when a client with terminate = 1, finished all his job -> all workers and Manager will terminate
+
 ----------------------------------------------------------------------------------------------
 <ins>System Limitations:</ins>
+the main limitation is the sqs in-flight max size of 120,000 messages.
+thats means onlt 120,000 workers can work simultaneously. thats a lot, but it still limited.
+Our program supports, adding up different sizes of reviews in a single message.
+so if we put even only 2 reviews in the same message we can increase the number to 240,000 workers.
 
-120,000 but we can decrease the batch size
+Another limitation is the message size, sqs only supports message up to 2GB. its a very big number but also limited.
+So a big review or a batch of review is limited.
+a good solution will be to upload the reviews to S3 first. and then only sending links as messages for the workers. 
 
 ----------------------------------------------------------------------------------------------
 
