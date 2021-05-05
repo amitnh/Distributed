@@ -46,5 +46,18 @@ SQS queue on AWS doesn't promise us that we couldn't get duplicated messages, th
 <ins>Threads:</ins>
 
 ----------------------------------------------------------------------------------------------
-<ins>several clients:</ins>
+<ins>Several Clients At The Same Time:</ins>
 
+----------------------------------------------------------------------------------------------
+<ins>System Limitations:</ins>
+
+120,000 but we can decrease the batch size
+
+----------------------------------------------------------------------------------------------
+
+type of instance you used (ami + type:micro/small/large…),
+how much time it took your program to finish working on the input files,
+and what was the n you used.
+
+ 
+ 
