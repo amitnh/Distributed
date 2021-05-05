@@ -36,7 +36,9 @@ this way we can work in parallel.
 <ins>Threads:</ins>
 
 Worker- uses a Thread pool.
+
 Manager- uses a Thread pool, and have 2 main tasks:
+
 1. Receive messages from Local Machines.
 2. Upload results from SqsResult to S3
 
@@ -76,6 +78,7 @@ a good solution will be to upload the reviews to S3 first. and then only sending
 
 ----------------------------------------------------------------------------------------------
 type of instance we used:
+
 ami:0009c3f63fca71e34 linux with java8 
 type: T2_XLARGE- but it also works with medium, we used XL for the large amount of threads.
 The Program took 16:15 minutes to run with n=500.
