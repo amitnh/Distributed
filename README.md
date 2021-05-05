@@ -1,7 +1,7 @@
 # Assignment 1 - Distributed Sarcasm Detector
 
 Amit Nagar Halevy 204210306
-Tal Kapelnik 
+Tal Kapelnik 204117089
 
 ![image](https://user-images.githubusercontent.com/58166360/117177288-853fee00-add9-11eb-80f1-dd0499860b03.png)
 
