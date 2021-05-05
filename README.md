@@ -27,40 +27,64 @@ Then, instances are launched in AWS (workers & a manager) to apply sentiment ana
 ![image](https://user-images.githubusercontent.com/58166360/117179538-e49efd80-addb-11eb-80e5-9aaf622883d5.png)
 ![image](https://user-images.githubusercontent.com/58166360/117179573-eff22900-addb-11eb-9a24-d90d21cea521.png)
 
-----------------------------------------------------------------------------------------------
-<ins>Basic Principle:</ins>
+how we chose to implement this:
+![image](https://user-images.githubusercontent.com/58166360/117188173-6d6e6700-ade5-11eb-8262-a9ddc6d647ff.png)
 
+this way we can work in parallel.
+
+----------------------------------------------------------------------------------------------
+<ins>Threads:</ins>
+
+Worker- uses a Thread pool.
+
+Manager- uses a Thread pool, and have 2 main tasks:
+
+1. Receive messages from Local Machines.
+2. Upload results from SqsResult to S3
+
+A thread finished a task he pushes the other task to the Thead pool.
+for example- if tread finished job 1, he puts in the Thead pool task 2.
+this way the manager can work in parallel, but also distribute his power and threads in a smart way.
 
 ----------------------------------------------------------------------------------------------
 <ins>Scalability:</ins>
 
+-Each worker uses the same SQS and pull only one message, so if we add workers the system will performe better.
+-We can use multiple LocalApllications there is no limit.
+-We use all the threads available by the instances we use.
+
 ----------------------------------------------------------------------------------------------
-<ins>persistence:</ins>
+<ins>Persistence:</ins>
 
 The worker only deletes the review after he finished processing it.
 so if he didn't finished for some reson, another worker will take this review for processing.
 
 ----------------------------------------------------------------------------------------------
-<ins>SQS:</ins>
-
-SQS queue on AWS doesn't promise us that we couldn't get duplicated messages, therefore we gave each review and each Job a uniqe Id.
-
-----------------------------------------------------------------------------------------------
-<ins>Threads:</ins>
-
-----------------------------------------------------------------------------------------------
 <ins>Several Clients At The Same Time:</ins>
+
+we are fullt supports a run of multiple clients.
+Only when a client with terminate = 1, finished all his job -> all workers and Manager will terminate
 
 ----------------------------------------------------------------------------------------------
 <ins>System Limitations:</ins>
+the main limitation is the sqs in-flight max size of 120,000 messages.
+thats means onlt 120,000 workers can work simultaneously. thats a lot, but it still limited.
+Our program supports, adding up different sizes of reviews in a single message.
+so if we put even only 2 reviews in the same message we can increase the number to 240,000 workers.
 
-120,000 but we can decrease the batch size
+Another limitation is the message size, sqs only supports message up to 2GB. its a very big number but also limited.
+So a big review or a batch of review is limited.
+a good solution will be to upload the reviews to S3 first. and then only sending links as messages for the workers. 
 
 ----------------------------------------------------------------------------------------------
+type of instance we used:
 
-type of instance you used (ami + type:micro/small/large…),
-how much time it took your program to finish working on the input files,
-and what was the n you used.
+ami:0009c3f63fca71e34 linux with java8 
+type: T2_XLARGE- but it also works with medium, we used XL for the large amount of threads.
+The Program took 16:15 minutes to run with n=500.
+
+We get the Results on S3-bucket in <ins>only 5 minutes</ins>, the buttle neck is downloading them on the Local Machine.
+if we could choose to make the HTML file on the AWS servers, we could do it much much faste, for example with Map-Reduce learned in class.
 
  
  
