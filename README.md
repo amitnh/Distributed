@@ -29,4 +29,13 @@ Then, instances are launched in AWS (workers & a manager) to apply sentiment ana
 
 
 
-<ins>How to run:</ins>
+<ins>Scalability:</ins>
+
+<ins>persistence:</ins>
+
+The worker only deletes the review after he finished processing it.
+so if he didn't finished for some reson, another worker will take this review for processing.
+
+<ins>SQS:</ins>
+
+SQS queue on AWS doesn't promise us that we couldn't get duplicated messages, therfor we gave each review and each Job a uniqe Id.
