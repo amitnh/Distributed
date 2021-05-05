@@ -23,7 +23,6 @@ public class Worker {
 
         //Running on t2-XL means we have 4 vCPUs.
         int cores = Runtime.getRuntime().availableProcessors();
-        cores = 1; // TODO DELTETE
         pool  = Executors.newFixedThreadPool(cores);
         for (int i =0;i<cores;i++) {
             Worker.WorkerThread resultThread = new Worker.WorkerThread();

@@ -26,10 +26,10 @@ public class AwsHelper {
     public static S3Client s3Client = S3Client.builder().region(Region.US_EAST_1).build();
     public static Ec2Client ec2 = Ec2Client.builder().region(Region.US_EAST_1).build();
 
-    public static int protection=0; //todo remove later
-    public static int maxNumOfInstances=7; //todo remove later
+    public static int protection=0; //only because we are students
+    public static int maxNumOfInstances=7; //only because we are students
 
-    public static String bucket_name = "bucket-amitandtal33";
+    public static String bucket_name = "bucket-amitandtal44";
     public static int NumOfRetriveMSGs = 1;
     public static String sqsTesting = "sqsTesting";
     public static String sqsLocalsToManager = "sqsLocalsToManager";
@@ -117,7 +117,7 @@ public class AwsHelper {
         ReceiveMessageRequest receiveRequest = ReceiveMessageRequest.builder()
                 .queueUrl(queueUrl)
                 //.visibilityTimeout(2) // waits 2 sec for reply
-                .maxNumberOfMessages(NumOfRetriveMSGs)  //TODO change to BATCH_SIZE
+                .maxNumberOfMessages(NumOfRetriveMSGs)
                 .build();
         return sqs.receiveMessage(receiveRequest).messages();
     }
@@ -209,7 +209,7 @@ public class AwsHelper {
     //=============================================================================
 
     public static void startInstance(String nameTag,String jarAddress) {
-        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n startInstance. nameTag:" +nameTag); // todo delete
+        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n startInstance. nameTag:" +nameTag);
 
         if(++protection>maxNumOfInstances) {
             return;
@@ -225,8 +225,8 @@ public class AwsHelper {
                     .minCount(1)
                     .userData(getDataScript(jarAddress))
                     .iamInstanceProfile(role)
-                    .keyName("amital")
-                    .securityGroupIds("sg-5422235a")//sg-7e7c937d
+                    .keyName("talamit")
+                    .securityGroupIds("sg-7e7c937d")//sg-5422235a
                     .build();
             RunInstancesResponse buildManagerResponse = ec2.runInstances(runRequest);
             String instanceId = buildManagerResponse.instances().get(0).instanceId();
@@ -241,14 +241,14 @@ public class AwsHelper {
             ec2.createTags(tagsRequest);
         }
         catch(Exception e){
-            AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n startInstance. Error:" +e); // todo delete
+            AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n startInstance. Error:" +e);
         }
 
     }
     private static String getDataScript(String file) {
         String str = "";
         str+="#! /bin/bash\n";
-        str+="wget https://" +bucket_name +".s3.amazonaws.com/"+ file + "\n";// todo change the s3address
+        str+="wget https://" +bucket_name +".s3.amazonaws.com/"+ file + "\n";
         str+="java -jar " + file + "\n";
         return Base64.getEncoder().encodeToString(str.getBytes());
 
@@ -270,7 +270,7 @@ public class AwsHelper {
         for (Reservation reservation : response.reservations()) {
             for (Instance instance : reservation.instances()) {
                 for (Tag tag : instance.tags()) {
-                    if ((tag.value().startsWith(tagName))) { // todo check
+                    if ((tag.value().startsWith(tagName))) {
                         List<String> instanceIds = new LinkedList<>();
                         instanceIds.add(instance.instanceId());
                         ec2.terminateInstances(TerminateInstancesRequest.builder()

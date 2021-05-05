@@ -44,7 +44,7 @@ public class LocalApplication {
     //args[] = [inputfilename1, ..., inputfilenameN, outputfilename1,..., outputfilenameN, n, terminate]
     public static void main(String[] args) throws IOException, InterruptedException {
         System.out.println("Local Main");
-        AwsHelper.OpenSQS(sqsTesting);      //TODO remove, this SQS is for ALL locals to upload jobs for the manager
+        AwsHelper.OpenSQS(sqsTesting);      //, this SQS is for ALL locals to upload jobs for the manager
 
         int numOfFiles = (args.length-2)/2;
         jobsCounter=numOfFiles;
@@ -56,7 +56,7 @@ public class LocalApplication {
         boolean isFirstLocal = AwsHelper.isOpen(AwsHelper.bucket_name);
 
         if(!isFirstLocal) {
-            System.out.println("Manager not Online");// todo delete
+            System.out.println("Manager not Online");
 
             AwsHelper.OpenS3();        //opens a new bucket(only if not open already), and upload manager and workers JAR files
             AwsHelper.uploadToS3("../Manager/AwsAss1.jar", "Manager.jar");
@@ -126,9 +126,6 @@ public class LocalApplication {
 
             downloadResults(finishedJobsOutputNames); // download from s3 to one file on Local Machine
 
-
-
-            //TODO only for testing, remove before flight
             List<Message> testlist = AwsHelper.popSQS(sqsTesting);
 
             //List<String> testMSG= AwsHelper.fromMSG(testlist,String.class);
@@ -192,20 +189,6 @@ public class LocalApplication {
             pw.close();
         }
     }
-
-
-//    public static void concatToHTML(PrintWriter pw,BufferedReader br) throws IOException {
-//
-//        System.out.println("reading file");
-//            String line = "";
-//            while ((line = br.readLine()) != null) {
-//                pw.println("<tr>"+getHtmlData(line)+"</tr>");
-//            }
-//        System.out.println("finished reading file");
-//            //f1.delete(); todo remove comment
-//
-//    }
-
 
     public static void MergeTextFiles(String outputname) throws IOException {
         File f = new File("./"+outputname+"/");

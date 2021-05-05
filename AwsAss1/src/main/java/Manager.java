@@ -28,15 +28,13 @@ public class Manager {
 
     public static void main(String[] args) {
         jobs = new ConcurrentHashMap<>();
-        AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n manager is up");// todo delete
+        AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n manager is up");
 
         AwsHelper.OpenSQS("SQSresult");
         AwsHelper.OpenSQS("SQSreview");
 
 
         int cores = Runtime.getRuntime().availableProcessors();
-        cores = 1; // TODO DELTETE
-
 
         pool  = Executors.newFixedThreadPool(cores);
 
@@ -53,7 +51,7 @@ public class Manager {
         for (Review r:job.reviews){
             list.add(AwsHelper.toMSG(r));
         }
-        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n pushing new job: jobTitle -" +job.title + " outputFileName - "+job.outputFileName); // todo delete
+        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n pushing new job: jobTitle -" +job.title + " outputFileName - "+job.outputFileName);
         AwsHelper.pushSQS("SQSreview",list);
     }
 
@@ -88,8 +86,7 @@ public class Manager {
         try{
             AwsHelper.downloadFile(address,"./"+address);
         }
-        catch (Exception e){
-            AwsHelper.pushSQS(AwsHelper.sqsTesting, "\nError downloadAndParse: " + e); // todo delete
+        catch (Exception ignored){
         }
 
         //---------------------parse--------------------------------
@@ -121,8 +118,6 @@ public class Manager {
             File f = new File("./"+address);// deletes the file from local Instance
             f.delete();
         } catch (IOException ignored) {
-            AwsHelper.pushSQS(AwsHelper.sqsTesting, "\ndownloadAndParse error44:  " + ignored); // todo delete
-
         }
 
         return new Job(jobOwner, jobid, jobName,  reviewList,  outputFileName);
@@ -143,8 +138,6 @@ public class Manager {
                 try {
                     sendTask();
                 } catch (InterruptedException ignored) {
-                    AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n manager's thread sendTask Error: " + ignored);// todo delete
-
                 }
             }
 
@@ -162,7 +155,7 @@ public class Manager {
                 OngoingJobs.decrementAndGet();
             }
             if (OngoingJobs.get() == 0 && terminated == 1) {
-                AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n manager's thread terminating");// todo delete
+                AwsHelper.pushSQS(AwsHelper.sqsTesting, "\n manager's thread terminating");
                 AwsHelper.terminateInstancesByTag("Worker"); //numOfCurrWorkers
                 // delete sqs's
                 AwsHelper.deleteSQS(AwsHelper.sqsLocalsToManager);
@@ -277,12 +270,10 @@ public class Manager {
                         int remainingResp = job.remainingResponses.decrementAndGet();
                         if (remainingResp <= 0) {// finihed with that job
                             finishedJobs.add(job);
-                            AwsHelper.pushSQS(AwsHelper.sqsTesting, "\njob finished");// todo delete
-
                         }
                     }
                     catch(Exception e) {
-                        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager's thread error1:"+ e);// todo delete
+                        AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager's thread error1:"+ e);
 
                     }
                 }
@@ -290,7 +281,7 @@ public class Manager {
                 AwsHelper.deletefromSQS("SQSresult",results);
             }
             catch(Exception e) {
-                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager's thread is dead save result error2:"+ e);// todo delete
+                AwsHelper.pushSQS(AwsHelper.sqsTesting,"\n manager's thread is dead save result error2:"+ e);
             }
             return finishedJobs;
         }
