@@ -27,6 +27,9 @@ Then, instances are launched in AWS (workers & a manager) to apply sentiment ana
 ![image](https://user-images.githubusercontent.com/58166360/117179538-e49efd80-addb-11eb-80e5-9aaf622883d5.png)
 ![image](https://user-images.githubusercontent.com/58166360/117179573-eff22900-addb-11eb-9a24-d90d21cea521.png)
 
+----------------------------------------------------------------------------------------------
+<ins>Basic Principle:</ins>
+
 
 ----------------------------------------------------------------------------------------------
 <ins>Scalability:</ins>
