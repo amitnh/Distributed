@@ -81,10 +81,10 @@ type of instance we used:
 
 ami:0009c3f63fca71e34 linux with java8 
 type: T2_XLARGE- but it also works with medium, we used XL for the large amount of threads.
-The Program took 16:15 minutes to run with n=500.
+The Program took 9:30 minutes to run with n=500.
 
 We get the Results on S3-bucket in <ins>only 5 minutes</ins>, the buttle neck is downloading them on the Local Machine.
-if we could choose to make the HTML file on the AWS servers, we could do it much much faste, for example with Map-Reduce learned in class.
+if we could choose to make the HTML file on the AWS servers, we could do it much much faster, for example using Map-Reduce learned in class.
 
  
  
