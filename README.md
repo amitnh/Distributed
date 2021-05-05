@@ -47,6 +47,9 @@ this way the manager can work in parallel, but also distribute his power and thr
 ----------------------------------------------------------------------------------------------
 <ins>Scalability:</ins>
 
+-Each worker uses the same SQS and pull only one message, so if we add workers the system will performe better.
+-We can use multiple LocalApllications there is no limit.
+-We use all the threads available by the instances we use.
 
 ----------------------------------------------------------------------------------------------
 <ins>Persistence:</ins>
@@ -72,12 +75,12 @@ So a big review or a batch of review is limited.
 a good solution will be to upload the reviews to S3 first. and then only sending links as messages for the workers. 
 
 ----------------------------------------------------------------------------------------------
-
 type of instance we used:
 ami:0009c3f63fca71e34 linux with java8 
 type: T2_XLARGE- but it also works with medium, we used XL for the large amount of threads.
 The Program took 16:15 minutes to run with n=500.
 # we get the Results on S3-bucket in only a few minutes, the buttle neck is downloading them on the Local Machine.
+# if we could choose to make the HTML file on the AWS servers, we could do it much much faste, for example with Map-Reduce learned in class.
 
  
  
