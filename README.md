@@ -28,25 +28,21 @@ Then, instances are launched in AWS (workers & a manager) to apply sentiment ana
 ![image](https://user-images.githubusercontent.com/58166360/117179573-eff22900-addb-11eb-9a24-d90d21cea521.png)
 
 ----------------------------------------------------------------------------------------------
-<ins>Basic Principle:</ins>
-
+<ins>SQS's:</ins>
 
 ----------------------------------------------------------------------------------------------
 <ins>Scalability:</ins>
 
 ----------------------------------------------------------------------------------------------
-<ins>persistence:</ins>
+<ins>Persistence:</ins>
 
 The worker only deletes the review after he finished processing it.
 so if he didn't finished for some reson, another worker will take this review for processing.
 
-----------------------------------------------------------------------------------------------
-<ins>SQS:</ins>
-
-SQS queue on AWS doesn't promise us that we couldn't get duplicated messages, therefore we gave each review and each Job a uniqe Id.
 
 ----------------------------------------------------------------------------------------------
 <ins>Threads:</ins>
+Worker- uses a Thread pool,
 
 ----------------------------------------------------------------------------------------------
 <ins>Several Clients At The Same Time:</ins>
@@ -58,9 +54,11 @@ SQS queue on AWS doesn't promise us that we couldn't get duplicated messages, th
 
 ----------------------------------------------------------------------------------------------
 
-type of instance you used (ami + type:micro/small/large…),
-how much time it took your program to finish working on the input files,
-and what was the n you used.
+type of instance we used:
+ami:0009c3f63fca71e34 linux with java8 
+type: T2_XLARGE- but it also works with medium, we used XL for the large amount of threads.
+The Program took 16:15 minutes to run with n=500.
+# we get the Results on S3-bucket in only a few minutes, the buttle neck is downloading them on the Local Machine.
 
  
  
